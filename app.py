@@ -13,6 +13,7 @@ host = os.getenv("DB_HOSTNAME")
 user = os.getenv("DB_USER")
 password = os.getenv("DB_PASSWORD")
 database = os.getenv("DB_DATABASE")
+frontend_url = os.getenv("FRONTEND_URL")
 
 
 class StudentSignUp(BaseModel):
@@ -37,10 +38,10 @@ class UserLogin(BaseModel):
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Allow only the frontend's origin
+    allow_origins=[frontend_url],
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -79,8 +80,8 @@ async def log_in(user: UserLogin):
             raise HTTPException(status_code=400, detail="Invalid password")
         return {"message": "Login successful"}
 
-    except mysql.connector.Error as e:
-        raise HTTPException(status_code=500, detail="Login failed")
+    # except mysql.connector.Error as e:
+    #     raise HTTPException(status_code=500, detail="Login failed")
 
     finally:
         cursor.close()
@@ -97,14 +98,14 @@ async def sign_up(student: StudentSignUp):
         hashed_password = ph.hash(student.password)
 
         # Check for advisor1
-        cursor.execute("SELECT signerID FROM signer WHERE CONCAT(firstName, ' ', lastName) = %s",
+        cursor.execute("SELECT staffID FROM staff WHERE CONCAT(firstName, ' ', lastName) = %s",
                        (student.advisor1_fullname,))
         advisor1_id = cursor.fetchone()
         if not advisor1_id:
             raise HTTPException(status_code=400, detail="Advisor 1 not found")
 
         # Check for advisor2
-        cursor.execute("SELECT signerID FROM signer WHERE CONCAT(firstName, ' ', lastName) = %s",
+        cursor.execute("SELECT staffID FROM staff WHERE CONCAT(firstName, ' ', lastName) = %s",
                        (student.advisor2_fullname,))
         advisor2_id = cursor.fetchone()
         if not advisor2_id:
@@ -155,13 +156,13 @@ async def sign_up(student: StudentSignUp):
         conn.close()
 
 
-@app.get("/allSigner")
+@app.get("/allStaff")
 def get_signer():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
 
-        cursor.execute("SELECT * FROM signer;")
+        cursor.execute("SELECT * FROM staff;")
         roles = cursor.fetchall()
         return roles
     finally:

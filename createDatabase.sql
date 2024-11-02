@@ -26,10 +26,10 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `kmutt_database`.`signer`
+-- Table `kmutt_database`.`staff`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `kmutt_database`.`signer` (
-  `signerID` INT NOT NULL AUTO_INCREMENT,
+CREATE TABLE IF NOT EXISTS `kmutt_database`.`staff` (
+  `staffID` INT NOT NULL AUTO_INCREMENT,
   `username` VARCHAR(50) NOT NULL,
   `password` VARCHAR(255) NOT NULL,
   `firstName` VARCHAR(50) NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`signer` (
   `signature` LONGBLOB NOT NULL,
   `profileImg` LONGBLOB NULL,
   `roleID` INT NOT NULL,
-  PRIMARY KEY (`signerID`, `roleID`),
+  PRIMARY KEY (`staffID`, `roleID`),
   INDEX `fk_signer_role1_idx` (`roleID` ASC) VISIBLE,
   UNIQUE INDEX `username_UNIQUE` (`username` ASC) VISIBLE,
   CONSTRAINT `fk_signer_role1`
@@ -103,12 +103,12 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`student` (
   INDEX `fk_student_faculty1_idx` (`facultyID` ASC) VISIBLE,
   CONSTRAINT `fk_student_signer1`
     FOREIGN KEY (`advisorID1`)
-    REFERENCES `kmutt_database`.`signer` (`signerID`)
+    REFERENCES `kmutt_database`.`staff` (`staffID`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_student_signer2`
     FOREIGN KEY (`advisorID2`)
-    REFERENCES `kmutt_database`.`signer` (`signerID`)
+    REFERENCES `kmutt_database`.`staff` (`staffID`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_student_department1`
@@ -167,7 +167,8 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`documentAbsence` (
   `studentFaculty` VARCHAR(50) NOT NULL,
   `studentDepartment` VARCHAR(50) NOT NULL,
   `studentGpax` VARCHAR(50) NOT NULL,
-  `advisorName` VARCHAR(50) NOT NULL,
+  `advisorName1` VARCHAR(50) NOT NULL,
+  `advisorName2` VARCHAR(50) NULL,
   `studentTel` VARCHAR(10) NOT NULL,
   `studentEmail` VARCHAR(50) NOT NULL,
   `description` VARCHAR(300) NOT NULL,
@@ -191,41 +192,54 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `kmutt_database`.`approve`
+-- Table `kmutt_database`.`documentAbsenceProgress`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `kmutt_database`.`approve` (
-  `approveID` INT NOT NULL AUTO_INCREMENT,
-  `isApprove` VARCHAR(50) NULL,
-  `approveDate` DATETIME NULL,
-  `signerID` INT NOT NULL,
-  `nextSignerID` INT NULL,
-  `documentAbsenceID` INT NULL,
-  `documentActivityEventID` INT NULL,
-  `comment` VARCHAR(1000) NULL,
-  `documentType` VARCHAR(50) NULL,
-  PRIMARY KEY (`approveID`, `signerID`),
-  INDEX `fk_approve_signer1_idx` (`signerID` ASC) VISIBLE,
-  INDEX `fk_approve_signer2_idx` (`nextSignerID` ASC) VISIBLE,
-  INDEX `fk_approve_documentAbsence1_idx` (`documentAbsenceID` ASC) VISIBLE,
-  INDEX `fk_approve_documentActivityEvent1_idx` (`documentActivityEventID` ASC) VISIBLE,
-  CONSTRAINT `fk_approve_signer1`
-    FOREIGN KEY (`signerID`)
-    REFERENCES `kmutt_database`.`signer` (`signerID`)
+CREATE TABLE IF NOT EXISTS `kmutt_database`.`documentAbsenceProgress` (
+  `progressID` INT NOT NULL,
+  `staffID` INT NOT NULL,
+  `staff_roleID` INT NOT NULL,
+  `documentAbsenceID` INT NOT NULL,
+  `studentID` BIGINT NOT NULL,
+  `isApprove` VARCHAR(45) NULL,
+  `comment` VARCHAR(400) NULL,
+  PRIMARY KEY (`progressID`, `staffID`, `staff_roleID`, `documentAbsenceID`, `studentID`),
+  INDEX `fk_documentAbsenceProgress_staff1_idx` (`staffID` ASC, `staff_roleID` ASC) VISIBLE,
+  INDEX `fk_documentAbsenceProgress_documentAbsence1_idx` (`documentAbsenceID` ASC, `studentID` ASC) VISIBLE,
+  CONSTRAINT `fk_documentAbsenceProgress_staff1`
+    FOREIGN KEY (`staffID` , `staff_roleID`)
+    REFERENCES `kmutt_database`.`staff` (`staffID` , `roleID`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_approve_signer2`
-    FOREIGN KEY (`nextSignerID`)
-    REFERENCES `kmutt_database`.`signer` (`signerID`)
+  CONSTRAINT `fk_documentAbsenceProgress_documentAbsence1`
+    FOREIGN KEY (`documentAbsenceID` , `studentID`)
+    REFERENCES `kmutt_database`.`documentAbsence` (`documentAbsenceID` , `studentID`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `kmutt_database`.`documentActivityEventProgress`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `kmutt_database`.`documentActivityEventProgress` (
+  `progessID` INT NOT NULL,
+  `staffID` INT NOT NULL,
+  `staff_roleID` INT NOT NULL,
+  `documentActivityEventID` INT NOT NULL,
+  `studentID` BIGINT NOT NULL,
+  `isApprove` VARCHAR(45) NULL,
+  `comment` VARCHAR(400) NULL,
+  PRIMARY KEY (`progessID`, `staffID`, `staff_roleID`, `documentActivityEventID`, `studentID`),
+  INDEX `fk_documentActivityEventProgress_staff1_idx` (`staffID` ASC, `staff_roleID` ASC) VISIBLE,
+  INDEX `fk_documentActivityEventProgress_documentActivityEvent1_idx` (`documentActivityEventID` ASC, `studentID` ASC) VISIBLE,
+  CONSTRAINT `fk_documentActivityEventProgress_staff1`
+    FOREIGN KEY (`staffID` , `staff_roleID`)
+    REFERENCES `kmutt_database`.`staff` (`staffID` , `roleID`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_approve_documentAbsence1`
-    FOREIGN KEY (`documentAbsenceID`)
-    REFERENCES `kmutt_database`.`documentAbsence` (`documentAbsenceID`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_approve_documentActivityEvent1`
-    FOREIGN KEY (`documentActivityEventID`)
-    REFERENCES `kmutt_database`.`documentActivityEvent` (`documentActivityEventID`)
+  CONSTRAINT `fk_documentActivityEventProgress_documentActivityEvent1`
+    FOREIGN KEY (`documentActivityEventID` , `studentID`)
+    REFERENCES `kmutt_database`.`documentActivityEvent` (`documentActivityEventID` , `studentID`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
