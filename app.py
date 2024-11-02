@@ -88,18 +88,38 @@ async def log_in(user: UserLogin):
     try:
         select_query = "SELECT password FROM student WHERE username = %s"
         cursor.execute(select_query, (user.username,))
-        result = cursor.fetchone()
-        if result is None:
+        passwordResult = cursor.fetchone()
+        if passwordResult is None:
             raise HTTPException(status_code=404, detail="User not found")
-        stored_password = result[0]
+        stored_password = passwordResult[0]
 
         try:
             ph.verify(stored_password, user.password)
-
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid password")
-        return {"message": "Login successful"}
 
+        select_user = "SELECT * FROM student WHERE username = %s"
+        cursor.execute(select_user, (user.username,))
+        userResult = cursor.fetchone()
+        select_department = "SELECT departmentName FROM department WHERE departmentID = %s"
+        cursor.execute(select_department, (userResult[9],))
+        departmentName = cursor.fetchone()
+        select_faculty = "SELECT facultyName FROM faculty WHERE facultyID = %s"
+        cursor.execute(select_faculty, (userResult[10],))
+        facultyName = cursor.fetchone()
+
+        user_info = {
+            "studentID": userResult[0],
+            "username": userResult[1],
+            "firstName": userResult[3],
+            "lastName": userResult[4],
+            "tel": userResult[5],
+            "alterEmail": userResult[6],
+            "signature": userResult[7],
+            "faculty": facultyName[0],
+            "department": departmentName[0]
+        }
+        return {"message": "Login successful", "user": user_info}
     # except mysql.connector.Error as e:
     #     raise HTTPException(status_code=500, detail="Login failed")
 
