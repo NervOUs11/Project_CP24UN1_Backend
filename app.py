@@ -26,6 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class StudentSignUp(BaseModel):
     studentID: int
     username: str
@@ -86,42 +87,95 @@ async def log_in(user: UserLogin):
     cursor = conn.cursor()
 
     try:
-        select_query = "SELECT password FROM student WHERE username = %s"
-        cursor.execute(select_query, (user.username,))
-        passwordResult = cursor.fetchone()
-        if passwordResult is None:
+        username_query = """SELECT 'student' AS user_type, username 
+                         FROM student WHERE username = %s
+                         UNION ALL
+                         SELECT 'staff' AS user_type, username 
+                         FROM staff WHERE username = %s"""
+        cursor.execute(username_query, (user.username, user.username))
+        result = cursor.fetchone()
+        if result is None:
             raise HTTPException(status_code=404, detail="User not found")
-        stored_password = passwordResult[0]
+        userRole = result[0]
+
+        # select_query = "SELECT password FROM student WHERE username = %s"
+        # cursor.execute(select_query, (user.username,))
+        # passwordResult = cursor.fetchone()
+        # if passwordResult is None:
+        #     raise HTTPException(status_code=404, detail="User not found")
+        # stored_password = passwordResult[0]
 
         try:
+            if userRole == 'student':
+                select_query = "SELECT password FROM student WHERE username = %s"
+            elif userRole == 'staff':
+                select_query = "SELECT password FROM staff WHERE username = %s"
+            else:
+                select_query = "SELECT password FROM student WHERE username = %s"
+                print("Not student or staff")
+            cursor.execute(select_query, (user.username,))
+            passwordResult = cursor.fetchone()
+            stored_password = passwordResult[0]
             ph.verify(stored_password, user.password)
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid password")
 
-        select_user = "SELECT * FROM student WHERE username = %s"
-        cursor.execute(select_user, (user.username,))
-        userResult = cursor.fetchone()
-        select_department = "SELECT departmentName FROM department WHERE departmentID = %s"
-        cursor.execute(select_department, (userResult[9],))
-        departmentName = cursor.fetchone()
-        select_faculty = "SELECT facultyName FROM faculty WHERE facultyID = %s"
-        cursor.execute(select_faculty, (userResult[10],))
-        facultyName = cursor.fetchone()
+        if userRole == "student":
+            # get all user data
+            select_user = "SELECT * FROM student WHERE username = %s"
+            cursor.execute(select_user, (user.username,))
+            userResult = cursor.fetchone()
+            # get department name
+            select_department = "SELECT departmentName FROM department WHERE departmentID = %s"
+            cursor.execute(select_department, (userResult[9],))
+            departmentName = cursor.fetchone()
+            # get faculty name
+            select_faculty = "SELECT facultyName FROM faculty WHERE facultyID = %s"
+            cursor.execute(select_faculty, (userResult[10],))
+            facultyName = cursor.fetchone()
 
-        user_info = {
-            "studentID": userResult[0],
-            "username": userResult[1],
-            "firstName": userResult[3],
-            "lastName": userResult[4],
-            "tel": userResult[5],
-            "alterEmail": userResult[6],
-            "signature": userResult[7],
-            "faculty": facultyName[0],
-            "department": departmentName[0]
-        }
+            user_info = {
+                "studentID": userResult[0],
+                "username": userResult[1],
+                "firstName": userResult[3],
+                "lastName": userResult[4],
+                "tel": userResult[5],
+                "alterEmail": userResult[6],
+                "signature": userResult[7],
+                "faculty": facultyName[0],
+                "department": departmentName[0]
+            }
+        else:  # staff
+            # get all user data
+            select_user = "SELECT * FROM staff WHERE username = %s"
+            cursor.execute(select_user, (user.username,))
+            userResult = cursor.fetchone()
+            # get role name
+            select_department = "SELECT roleName FROM role WHERE roleID = %s"
+            cursor.execute(select_department, (userResult[9],))
+            roleName = cursor.fetchone()
+            # get department name
+            select_department = "SELECT departmentName FROM department WHERE departmentID = %s"
+            cursor.execute(select_department, (userResult[10],))
+            departmentName = cursor.fetchone()
+            # get faculty name
+            select_faculty = "SELECT facultyName FROM faculty WHERE facultyID = %s"
+            cursor.execute(select_faculty, (userResult[11],))
+            facultyName = cursor.fetchone()
+
+            user_info = {
+                "studentID": userResult[0],
+                "username": userResult[1],
+                "firstName": userResult[3],
+                "lastName": userResult[4],
+                "tel": userResult[5],
+                "alterEmail": userResult[6],
+                "signature": userResult[7],
+                "role": roleName[0],
+                "faculty": facultyName[0],
+                "department": departmentName[0]
+            }
         return {"message": "Login successful", "user": user_info}
-    # except mysql.connector.Error as e:
-    #     raise HTTPException(status_code=500, detail="Login failed")
 
     finally:
         cursor.close()
