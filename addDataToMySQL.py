@@ -10,7 +10,6 @@ password = os.getenv("DB_PASSWORD")
 database = os.getenv("DB_DATABASE")
 ph = PasswordHasher()
 
-
 connection = mysql.connector.connect(
     host=host,
     user=user,
@@ -18,73 +17,122 @@ connection = mysql.connector.connect(
     database=database
 )
 
+# Create a cursor object
 cursor = connection.cursor()
 
-# Insert data into `role` table
-roles = [
-    ('Professor',),
-    ('Assistant Professor',),
-    ('Advisor',),
-    ('Lecturer',),
-    ('Administrator',)
-]
-cursor.executemany("INSERT INTO role (roleName) VALUES (%s)", roles)
-
-# Insert data into `faculty` table
-faculties = [
-    ('Engineering',),
-    ('Science',),
-    ('Business',),
-    ('Arts',),
-    ('Education',),
-    ('SIT',)
-]
-cursor.executemany("INSERT INTO faculty (facultyName) VALUES (%s)", faculties)
-
-# Insert data into `department` table with faculty ID references
-departments = [
-    ('Computer Engineering', 1),
-    ('Electrical Engineering', 1),
-    ('Chemistry', 2),
-    ('Physics', 2),
-    ('Marketing', 3),
-    ('Finance', 3),
-    ('Fine Arts', 4),
-    ('Music', 4),
-    ('Teacher Education', 5),
-    ('IT', 6),
-    ('CS', 6),
-    ('DSI', 6)
-]
-cursor.executemany("INSERT INTO department (departmentName, facultyID) VALUES (%s, %s)", departments)
-
-# Staff records with plaintext passwords to be hashed
-staff_records = [
-    ('johndoe@gmail.com', 'password123', 'John', 'Doe', '1234567890', 'jdoe@example.com', 'dummySignature1', None, 1, 1, 1),
-    ('alicesmith@gmail.com', 'password123', 'Alice', 'Smith', '0987654321', 'asmith@example.com', 'dummySignature1', None, 2, 2, 1),
-    ('bobnguyen@gmail.com', 'password123', 'Bob', 'Nguyen', '1122334455', 'bnguyen@example.com', 'dummySignature1', None, 3, 3, 2),
-    ('charliejones@gmail.com', 'password123', 'Charlie', 'Jones', '2233445566', 'cjones@example.com', 'dummySignature1', None, 4, 5, 3),
-    ('dianajames@gmail.com', 'password123', 'Diana', 'James', '3344556677', 'djames@example.com', 'dummySignature1', None, 5, 9, 5)
+# Data to insert
+faculty_data = [
+    ('Engineering',),  # 1
+    ('Science',),  # 2
+    ('Business Administration',),  # 3
+    ('SIT',)  # 4
 ]
 
-# Insert each staff record with hashed password
-for record in staff_records:
-    username, password, firstName, lastName, tel, alterEmail, signature, profileImg, roleID, departmentID, facultyID = record
-    hashed_password = ph.hash(password)  # Hash the password using Argon2
+department_data = [
+    ('Computer Science', 1),  # 1
+    ('Electrical Engineering', 1),  # 2
+    ('Physics', 2),  # 3
+    ('Finance', 3),  # 4
+    ('IT', 4),  # 5
+    ('CS', 4),  # 6
+    ('DSI', 4)  # 7
+]
 
-    # SQL query to insert the staff record with hashed password
-    sql = """
-    INSERT INTO staff (username, password, firstName, lastName, tel, alterEmail, signature, profileImg, roleID, departmentID, facultyID)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """
-    data = (username, hashed_password, firstName, lastName, tel, alterEmail, signature, profileImg, roleID, departmentID, facultyID)
-    cursor.execute(sql, data)
+role_data = [
+    ('Administrator',),  # 1
+    ('Professor',),  # 2
+    ('Researcher',),  # 3
+    ('Lecturer',),  # 4
+    ('Advisor',),  # 5
+    ('Head of dept',),  # 6
+    ('Dean',)  # 7
+]
 
-# Commit the transaction
-connection.commit()
+staff_data = [
+    ('staff1@kmutt.ac.th', ph.hash("password123"), 'John', 'Doe', '0912345678', 'john.doe@gmail.com', 1, 1, 1),
+    ('staff2@kmutt.ac.th', ph.hash("password123"), 'Jane', 'Smith', '0912345679', 'jane.smith@gmail.com', 2, 5, 4),
+    ('staff3@kmutt.ac.th', ph.hash("password123"), 'Bob', 'Johnson', '0912345680', 'bob.johnson@gmail.com', 3, 5, 4),
+    ('staff4@kmutt.ac.th', ph.hash("password123"), 'Tom', 'Lee', '0912345111', 'Tom.lee@gmail.com', 3, 3, 2),
+    ('staff5@kmutt.ac.th', ph.hash("password123"), 'Alice', 'A.', '0912345111', 'Alice@gmail.com', 6, 5, 4),
+    ('staff6@kmutt.ac.th', ph.hash("password123"), 'Ben', 'B.', '0912345111', 'Ben@gmail.com', 7, 5, 4),
+    ('staff7@kmutt.ac.th', ph.hash("password123"), 'George', 'S.', '0912345111', 'George@gmail.com', 6, 3, 2),
+    ('staff8@kmutt.ac.th', ph.hash("password123"), 'Tim', 'S.', '0912345111', 'Tim@gmail.com', 7, 3, 2)
+]
 
-# Close the cursor and connection
-cursor.close()
-connection.close()
+student_data = [
+    (64130500045, 'nitis.visa@kmutt.ac.th', ph.hash("password123"), 'Nitis', 'Visayataksin', '0812345678',
+     'v.ounitit@gmail.com', 2, 5, 4),
+    (64130500051, 'Phongsathon@kmutt.ac.th', ph.hash("password123"), 'Phongsathon', 'Chansongkrao', '0812345678',
+     'kitokidandkwa@gmail.com', 3, 3, 2),
+    # (64130500001, 'Sasithon@kmutt.ac.th', ph.hash("password123"), 'Sasithon', 'Dontree', '0812345678',
+    #  'jonathan.jillef@gmail.com', 3, 4, 3),
+]
 
-print("Data inserted into `role`, `faculty`, `department`, and `staff` tables.")
+student_advisor_data = [
+    (2, 64130500045),
+    (3, 64130500045),
+    (4, 64130500051)
+]
+
+try:
+    connection.start_transaction()
+
+    # Insert data into `faculty` table
+    faculty_count = 0
+    for faculty in faculty_data:
+        cursor.execute("INSERT INTO `faculty` (`facultyName`) VALUES (%s)", faculty)
+        faculty_count += 1
+    print(f"Added {faculty_count} rows in 'faculty' table successfully.")
+
+    # Insert data into `department` table
+    department_count = 0
+    for department in department_data:
+        cursor.execute("INSERT INTO `department` (`departmentName`, `facultyID`) VALUES (%s, %s)", department)
+        department_count += 1
+    print(f"Added {department_count} rows in 'department' table successfully.")
+
+    # Insert data into `role` table
+    role_count = 0
+    for role in role_data:
+        cursor.execute("INSERT INTO `role` (`roleName`) VALUES (%s)", role)
+        role_count += 1
+    print(f"Added {role_count} rows in 'role' table successfully.")
+
+    # Insert data into `staff` table
+    staff_count = 0
+    for staff in staff_data:
+        cursor.execute("""
+            INSERT INTO `staff` (`username`, `password`, `firstName`, `lastName`, `tel`, `alterEmail`, `roleID`, `departmentID`, `facultyID`) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, staff)
+        staff_count += 1
+    print(f"Added {staff_count} rows in 'staff' table successfully.")
+
+    # Insert data into `student` table
+    student_count = 0
+    for student in student_data:
+        cursor.execute("""
+            INSERT INTO `student` (`studentID`, `username`, `password`, `firstName`, `lastName`, `tel`, `alterEmail`, `year`, `departmentID`, `facultyID`) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, student)
+        student_count += 1
+    print(f"Added {student_count} rows in 'student' table successfully.")
+
+    # Insert data into `student_advisor` table
+    advisor_count = 0
+    for advisor in student_advisor_data:
+        cursor.execute("INSERT INTO `student_advisor` (`staffID`, `studentID`) VALUES (%s, %s)", advisor)
+        advisor_count += 1
+    print(f"Added {advisor_count} rows in 'student_advisor' table successfully.")
+
+    # Commit the transaction
+    connection.commit()
+    print("All data inserted successfully!")
+
+except mysql.connector.Error as err:
+    connection.rollback()
+    print(f"Error: {err}")
+
+finally:
+    cursor.close()
+    connection.close()

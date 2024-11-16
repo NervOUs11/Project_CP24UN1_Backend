@@ -52,10 +52,9 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`student` (
   `password` VARCHAR(255) NOT NULL,
   `firstName` VARCHAR(50) NOT NULL,
   `lastName` VARCHAR(50) NOT NULL,
-  `tel` VARCHAR(10) NULL,
+  `tel` VARCHAR(10) NOT NULL,
   `alterEmail` VARCHAR(50) NULL,
-  `signature` LONGBLOB NOT NULL,
-  `profileImg` LONGBLOB NULL,
+  `year` INT NOT NULL,
   `departmentID` INT NOT NULL,
   `facultyID` INT NOT NULL,
   PRIMARY KEY (`studentID`, `departmentID`, `facultyID`),
@@ -90,8 +89,6 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`staff` (
   `lastName` VARCHAR(50) NOT NULL,
   `tel` VARCHAR(10) NULL,
   `alterEmail` VARCHAR(50) NULL,
-  `signature` LONGBLOB NOT NULL,
-  `profileImg` LONGBLOB NULL,
   `roleID` INT NOT NULL,
   `departmentID` INT NOT NULL,
   `facultyID` INT NOT NULL,
@@ -113,26 +110,18 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `kmutt_database`.`document`
+-- Table `kmutt_database`.`form`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `kmutt_database`.`document` (
+CREATE TABLE IF NOT EXISTS `kmutt_database`.`form` (
   `documentID` INT NOT NULL AUTO_INCREMENT,
---  `title` VARCHAR(100) NOT NULL,
---  `to` VARCHAR(50) NOT NULL,
---  `senderFaculty` VARCHAR(50) NOT NULL,
---  `description` VARCHAR(1000) NOT NULL,
---  `amount` DECIMAL NOT NULL,
---  `academicAndSkillDevelopment` INT NULL,
---  `sportsAndHealth` INT NULL,
---  `volunteer` INT NULL,
---  `artAndCulturalPreservation` INT NULL,
---  `characterDevelopment` INT NULL,
---  `universityCommitment` INT NULL,
---  `location` VARCHAR(100) NOT NULL,
---  `startDate` DATETIME NOT NULL,
---  `endDate` DATETIME NOT NULL,
   `studentID` BIGINT NOT NULL,
-  `documentFilePDF` LONGBLOB NULL,
+  `type` VARCHAR(45) NOT NULL,
+  `startTime` DATETIME NOT NULL,
+  `endTime` DATETIME NOT NULL,
+  `detail` VARCHAR(500) NOT NULL,
+  `attachmentFile1` LONGBLOB NULL,
+  `attachmentFile2` LONGBLOB NULL,
+  `attachmentFile2Name` VARCHAR(50) NULL,
   `createDate` DATETIME NOT NULL,
   `editDate` DATETIME NOT NULL,
   PRIMARY KEY (`documentID`, `studentID`),
@@ -146,10 +135,10 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `kmutt_database`.`documentProgress`
+-- Table `kmutt_database`.`progress`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `kmutt_database`.`documentProgress` (
-  `progessID` INT NOT NULL,
+CREATE TABLE IF NOT EXISTS `kmutt_database`.`progress` (
+  `progessID` INT NOT NULL AUTO_INCREMENT,
   `staffID` INT NOT NULL,
   `staff_roleID` INT NOT NULL,
   `documentID` INT NOT NULL,
@@ -168,7 +157,7 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`documentProgress` (
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_documentActivityEventProgress_documentActivityEvent1`
     FOREIGN KEY (`documentID` , `studentID`)
-    REFERENCES `kmutt_database`.`document` (`documentID` , `studentID`)
+    REFERENCES `kmutt_database`.`form` (`documentID` , `studentID`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -181,13 +170,13 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`student_advisor` (
   `staffID` INT NOT NULL,
   `studentID` BIGINT NOT NULL,
   PRIMARY KEY (`staffID`, `studentID`),
-  INDEX `fk_student_advisor_student1_idx` (`studentID` ASC) VISIBLE,
-  CONSTRAINT `fk_student_advisor_staff1`
+  INDEX `fk_student_advisors_student1_idx` (`studentID` ASC) VISIBLE,
+  CONSTRAINT `fk_student_advisors_staff1`
     FOREIGN KEY (`staffID`)
     REFERENCES `kmutt_database`.`staff` (`staffID`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_student_advisor_student1`
+  CONSTRAINT `fk_student_advisors_student1`
     FOREIGN KEY (`studentID`)
     REFERENCES `kmutt_database`.`student` (`studentID`)
     ON DELETE NO ACTION
