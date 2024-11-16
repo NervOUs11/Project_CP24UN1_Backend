@@ -129,8 +129,10 @@ async def log_in(user: UserLogin):
                 "lastName": userResult[4],
                 "tel": userResult[5],
                 "alterEmail": userResult[6],
-                "faculty": facultyName[0],
-                "department": departmentName[0]
+                "departmentID": userResult[8],
+                "department": departmentName[0],
+                "facultyID": userResult[9],
+                "faculty": facultyName[0]
             }
         else:  # staff
             # get all user data
@@ -158,8 +160,10 @@ async def log_in(user: UserLogin):
                 "tel": userResult[5],
                 "alterEmail": userResult[6],
                 "role": roleName[0],
+                "departmentID": userResult[8],
+                "department": departmentName[0],
+                "facultyID": userResult[9],
                 "faculty": facultyName[0],
-                "department": departmentName[0]
             }
         return {"message": "Login successful", "user": user_info}
 
