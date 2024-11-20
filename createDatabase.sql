@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`student` (
   `year` INT NOT NULL,
   `departmentID` INT NOT NULL,
   `facultyID` INT NOT NULL,
+  `currentGPA` FLOAT NOT NULL,
+  `cumulativeGPA` FLOAT NOT NULL,
   PRIMARY KEY (`studentID`, `departmentID`, `facultyID`),
   INDEX `fk_student_department1_idx` (`departmentID` ASC, `facultyID` ASC) VISIBLE,
   CONSTRAINT `fk_student_department1`

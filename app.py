@@ -55,9 +55,9 @@ class FormCreate(BaseModel):
     startTime: datetime
     endTime: datetime
     detail: str
-    attachmentFile1: bytes
-    attachmentFile2: bytes
-    attachmentFile2Name: str
+    attachmentFile1: Optional[bytes] = None
+    attachmentFile2: Optional[bytes] = None
+    attachmentFile2Name: Optional[str] = None
     # createDate: datetime
     # editDate: datetime
 
@@ -68,7 +68,8 @@ def get_db_connection():
             host=host,
             user=user,
             password=password,
-            database=database
+            database=database,
+            connection_timeout=30
         )
         return connection
     except mysql.connector.Error as e:
@@ -76,7 +77,7 @@ def get_db_connection():
         raise HTTPException(status_code=500, detail="Database connection failed")
 
 
-@app.post("/login")
+@app.post("/api/login")
 async def log_in(user: UserLogin):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -132,7 +133,9 @@ async def log_in(user: UserLogin):
                 "departmentID": userResult[8],
                 "department": departmentName[0],
                 "facultyID": userResult[9],
-                "faculty": facultyName[0]
+                "faculty": facultyName[0],
+                "currentGPA": userResult[10],
+                "cumulativeGPA": userResult[11]
             }
         else:  # staff
             # get all user data
@@ -141,7 +144,7 @@ async def log_in(user: UserLogin):
             userResult = cursor.fetchone()
             # get role name
             select_department = "SELECT roleName FROM role WHERE roleID = %s"
-            cursor.execute(select_department, (userResult[9],))
+            cursor.execute(select_department, (userResult[7],))
             roleName = cursor.fetchone()
             # get department name
             select_department = "SELECT departmentName FROM department WHERE departmentID = %s"
@@ -165,14 +168,14 @@ async def log_in(user: UserLogin):
                 "facultyID": userResult[9],
                 "faculty": facultyName[0],
             }
-        return {"message": "Login successful", "user": user_info}
+        return user_info
 
     finally:
         cursor.close()
         conn.close()
 
 
-@app.post("/signup")
+@app.post("/api/signup")
 async def sign_up(student: StudentSignUp):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -257,48 +260,57 @@ async def sign_up(student: StudentSignUp):
         conn.close()
 
 
-@app.get("/allStaff")
+@app.get("/api/allStaff")
 def get_signer():
     conn = get_db_connection()
     cursor = conn.cursor()
+
     try:
 
         cursor.execute("SELECT * FROM staff;")
         roles = cursor.fetchall()
         return roles
+
     finally:
         cursor.close()
         conn.close()
 
 
-@app.get("/allFaculty")
+@app.get("/api/allFaculty")
 def get_faculty():
     conn = get_db_connection()
     cursor = conn.cursor()
+
     try:
 
         cursor.execute("SELECT * FROM faculty;")
         roles = cursor.fetchall()
         return roles
+
     finally:
         cursor.close()
         conn.close()
 
 
-@app.get("/allDepartment")
+@app.get("/api/allDepartment")
 def get_department():
     conn = get_db_connection()
     cursor = conn.cursor()
+
     try:
-        cursor.execute("SELECT * FROM department;")
+        cursor.execute("""SELECT department.departmentID, 
+                       department.departmentName, faculty.facultyName 
+                       FROM department JOIN faculty 
+                       ON department.facultyID = faculty.facultyID;""")
         roles = cursor.fetchall()
         return roles
+
     finally:
         cursor.close()
         conn.close()
 
 
-@app.post("/add")
+@app.post("/api/add")
 async def create_document(form: FormCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -359,14 +371,15 @@ async def create_document(form: FormCreate):
             all_staff_details.extend(staff)
 
         insert_progress = """INSERT INTO progress (staffID, staff_roleID, documentID,
-                          studentID, createDate, editDate)
-                          VALUES (%s, %s, %s, %s, %s, %s)"""
+                          studentID, isApprove, createDate, editDate)
+                          VALUES (%s, %s, %s, %s, %s, %s, %s)"""
         for s in all_staff_details:
             cursor.execute(insert_progress, (
                 s[0],
                 s[7],
                 document_id,
                 form.studentID,
+                "Waiting for approve",
                 create_date,
                 edit_date
             ))
@@ -384,16 +397,16 @@ async def create_document(form: FormCreate):
         conn.close()
 
 
-@app.get("/document/{id}")
+@app.get("/api/allDocument/{id}")
 async def get_all_document(id: str):
     conn = get_db_connection()
     cursor = conn.cursor()
+    all_doc = []
+
     try:
-        query = """
-                SELECT 'student' AS table_name FROM student WHERE studentID = %s
+        query = """SELECT 'student' AS table_name FROM student WHERE studentID = %s
                 UNION
-                SELECT 'staff' AS table_name FROM staff WHERE staffID = %s
-                """
+                SELECT 'staff' AS table_name FROM staff WHERE staffID = %s"""
         cursor.execute(query, (id, id))
         result = cursor.fetchone()
         if result is None:
@@ -404,22 +417,91 @@ async def get_all_document(id: str):
             query = """SELECT * FROM form WHERE studentID = %s"""
             cursor.execute(query, (id,))
             result = cursor.fetchall()
-            return {"document": result, "Table": "document"}
+            # all_doc = []
+            print(result)
+            for r in result:
+                document_info = {
+                    "documentID": r[0],
+                    "documentType": r[2],
+                    "createDate": r[9],
+                    "editDate": r[10],
+                    "status": "Approve"  # check status in progress table then show in here
+                }
+                all_doc.append(document_info)
+            return all_doc
         else:
-            query = """SELECT * FROM progress 
+            query = """SELECT progress.*, form.type FROM progress 
                     JOIN form ON progress.documentID = form.documentID 
-                    WHERE staffID = %s
-                    """
+                    WHERE staffID = %s"""
             cursor.execute(query, (id,))
             result = cursor.fetchall()
-            return {"document": result, "Table": "progress"}
+            # all_doc = []
+            for r in result:
+                document_info = {
+                    "progessID": r[0],
+                    "documentID": r[3],
+                    "studentID": r[4],
+                    "isApprove": r[5],
+                    "comment": r[6],
+                    "createDate": r[7],
+                    "editDate": r[8],
+                    "documentType": r[9]
+                }
+                all_doc.append(document_info)
+            return all_doc
+
+    except Exception as e:
+        print(e)
 
     finally:
         cursor.close()
         conn.close()
 
 
-@app.get("/document/{documentID}")
+@app.get("/api/documentDetail/{documentID}")
 async def get_document_by_id(documentID: str):
     conn = get_db_connection()
     cursor = conn.cursor()
+    progress = []
+
+    try:
+        query_form_detail = """SELECT * FROM form
+                            WHERE documentID = %s"""
+        cursor.execute(query_form_detail, (documentID,))
+        detail_result = cursor.fetchone()
+
+        query_progress = """SELECT progress.*, concat(staff.firstName, " ", staff.lastName), 
+                         role.roleName
+                         FROM progress
+                         JOIN role ON progress.staff_roleID = role.roleID
+                         JOIN staff ON progress.staffID = staff.staffID
+                         WHERE documentID = %s"""
+        cursor.execute(query_progress, (documentID,))
+        progress_result = cursor.fetchall()
+
+        for p in progress_result:
+            info = {
+                "staffName": p[9],
+                "staffRole": p[10],
+                "status": p[5]
+            }
+            progress.append(info)
+
+        document_info = {
+            "DocumentID": detail_result[0],
+            "DocumentType": detail_result[2],
+            "startTime": detail_result[3],
+            "endTime": detail_result[4],
+            "detail": detail_result[5],
+            "file1": detail_result[6],
+            "file2": detail_result[7],
+            "file2Name": detail_result[8],
+            "createDate": detail_result[9],
+            "editDate": detail_result[10],
+            "allProgress": progress
+        }
+
+        return document_info
+
+    except Exception as e:
+        print(e)
