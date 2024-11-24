@@ -62,6 +62,13 @@ class FormCreate(BaseModel):
     # editDate: datetime
 
 
+class ApproveDetail(BaseModel):
+    progressID: int
+    staffID: int
+    documentID: int
+    isApprove: str = "Approve"
+
+
 def get_db_connection():
     try:
         connection = mysql.connector.connect(
@@ -128,6 +135,7 @@ async def log_in(user: UserLogin):
                 "username": userResult[1],
                 "firstName": userResult[3],
                 "lastName": userResult[4],
+                "role": "Student",
                 "tel": userResult[5],
                 "alterEmail": userResult[6],
                 "departmentID": userResult[8],
@@ -385,7 +393,6 @@ async def create_document(form: FormCreate):
             ))
 
         conn.commit()
-        # return {"staff_details": all_staff_details}
         return {"message": "Created successfully"}, 201
 
     except mysql.connector.Error as e:
@@ -417,7 +424,6 @@ async def get_all_document(id: str):
             query = """SELECT * FROM form WHERE studentID = %s"""
             cursor.execute(query, (id,))
             result = cursor.fetchall()
-            # all_doc = []
             print(result)
             for r in result:
                 document_info = {
@@ -430,12 +436,14 @@ async def get_all_document(id: str):
                 all_doc.append(document_info)
             return all_doc
         else:
-            query = """SELECT progress.*, form.type FROM progress 
-                    JOIN form ON progress.documentID = form.documentID 
-                    WHERE staffID = %s"""
+            query = """SELECT progress.*, form.type FROM progress
+                    JOIN form ON progress.documentID = form.documentID
+                    WHERE staffID = %s AND progress.progressID"""
+            query_before_progress = """SELECT progress.*, form.type FROM progress
+                                JOIN form ON progress.documentID = form.documentID
+                                WHERE staffID = %s AND progress.progressID-1"""
             cursor.execute(query, (id,))
             result = cursor.fetchall()
-            # all_doc = []
             for r in result:
                 document_info = {
                     "progessID": r[0],
@@ -481,6 +489,7 @@ async def get_document_by_id(documentID: str):
 
         for p in progress_result:
             info = {
+                "progressID": p[0],
                 "staffName": p[9],
                 "staffRole": p[10],
                 "status": p[5]
@@ -505,3 +514,37 @@ async def get_document_by_id(documentID: str):
 
     except Exception as e:
         print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.put("/api/approve")
+async def approve(detail: ApproveDetail):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        update_query = """
+        UPDATE progress
+        SET isApprove = %s
+        WHERE progressID = %s
+          AND staffID = %s
+          AND documentID = %s;
+        """
+        cursor.execute(update_query, (
+            detail.isApprove,
+            detail.progressID,
+            detail.staffID,
+            detail.documentID
+        ))
+        conn.commit()
+        return {"message": "Approve successfully."}
+
+    except Exception as e:
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()

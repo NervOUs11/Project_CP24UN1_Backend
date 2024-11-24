@@ -140,7 +140,7 @@ ENGINE = InnoDB;
 -- Table `kmutt_database`.`progress`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `kmutt_database`.`progress` (
-  `progessID` INT NOT NULL AUTO_INCREMENT,
+  `progressID` INT NOT NULL AUTO_INCREMENT,
   `staffID` INT NOT NULL,
   `staff_roleID` INT NOT NULL,
   `documentID` INT NOT NULL,
@@ -149,7 +149,7 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`progress` (
   `comment` VARCHAR(400) NULL,
   `createDate` DATETIME NOT NULL,
   `editDate` DATETIME NOT NULL,
-  PRIMARY KEY (`progessID`, `staffID`, `staff_roleID`, `documentID`, `studentID`),
+  PRIMARY KEY (`progressID`, `staffID`, `staff_roleID`, `documentID`, `studentID`),
   INDEX `fk_documentActivityEventProgress_staff1_idx` (`staffID` ASC, `staff_roleID` ASC) VISIBLE,
   INDEX `fk_documentActivityEventProgress_documentActivityEvent1_idx` (`documentID` ASC, `studentID` ASC) VISIBLE,
   CONSTRAINT `fk_documentActivityEventProgress_staff1`
