@@ -416,52 +416,6 @@ async def get_all_document(id: str):
     cursor = conn.cursor()
     all_doc = []
 
-    # try:
-    #     query = """SELECT 'student' AS table_name FROM student WHERE studentID = %s
-    #             UNION
-    #             SELECT 'staff' AS table_name FROM staff WHERE staffID = %s"""
-    #     cursor.execute(query, (id, id))
-    #     result = cursor.fetchone()
-    #     if result is None:
-    #         raise HTTPException(status_code=404, detail="User not found")
-    #     userRole = result[0]
-    #
-    #     if userRole == "student":
-    #         query_form = """SELECT * FROM form WHERE studentID = %s"""
-    #         cursor.execute(query_form, (id,))
-    #         form_result = cursor.fetchall()
-    #         # query_progress = """SELECT * FROM progress
-    #         #                  JOIN staff ON staff.staffID = progress.staffID
-    #         #                  JOIN role ON role.roleID = staff.roleID
-    #         #                  WHERE progress.studentID = %s
-    #         #                  AND (
-    #         #                     (role.roleName = 'Head of dept' AND progress.isApprove = 'Approve')
-    #         #                     OR
-    #         #                     (role.roleName = 'Dean' AND progress.isApprove = 'Approve')
-    #         #                  );
-    #         #                  """
-    #         query_progress = """SELECT progress.*, role.roleName FROM progress
-    #                          JOIN staff ON staff.staffID = progress.staffID
-    #                          JOIN role ON role.roleID = staff.roleID
-    #                          WHERE progress.studentID = %s;"""
-    #         cursor.execute(query_progress, (id,))
-    #         progress_result = cursor.fetchall()
-    #
-    #         for p in progress_result:
-    #             print(f"documentID = {p[3]},"
-    #                   f"status = {p[5]},"
-    #                   f"role = {p[9]}")
-    #         for r in form_result:
-    #             document_info = {
-    #                 "documentID": r[0],
-    #                 "documentType": r[2],
-    #                 "createDate": r[9],
-    #                 "editDate": r[10],
-    #                 # "status": status[r]
-    #             }
-    #             all_doc.append(document_info)
-    #         return all_doc
-
     try:
         query = """SELECT 'student' AS table_name FROM student WHERE studentID = %s
                     UNION
@@ -526,48 +480,42 @@ async def get_all_document(id: str):
                 all_doc.append(document_info)
             return all_doc
         else:
-            # query = """SELECT progress.*, form.type FROM progress
-            #         JOIN form ON progress.documentID = form.documentID
-            #         WHERE staffID = %s AND progress.progressID"""
-            # query = """SELECT progress.*, form.type
-            #         FROM progress
-            #         JOIN form ON progress.documentID = form.documentID
-            #         WHERE staffID = %s
-            #           AND EXISTS (
-            #             SELECT 1
-            #             FROM progress AS prev_progress
-            #             WHERE prev_progress.progressID = progress.progressID - 1
-            #               AND prev_progress.documentID = progress.documentID
-            #               AND prev_progress.isApprove = 'Approve'
-            #           );"""
-            query = """
-                SELECT progress.*, form.type
-                FROM progress
-                JOIN form ON progress.documentID = form.documentID
-                WHERE staffID = %s
-                  AND EXISTS (
-                    SELECT 1
-                    FROM progress AS prev_progress
-                    WHERE prev_progress.progressID = progress.progressID - 1
-                      AND prev_progress.documentID = progress.documentID
-                      AND prev_progress.isApprove = 'Approve'
-                  )
-                  AND NOT EXISTS (
-                    SELECT 1
-                    FROM progress AS exclude_progress
-                    JOIN role ON exclude_progress.staff_roleID = role.roleID
-                    WHERE exclude_progress.documentID = progress.documentID
-                      AND exclude_progress.isApprove = 'Approve'
-                      AND role.roleName IN ('Dean', 'Head of dept')
-                      AND EXISTS (
+            query = """SELECT progress.*, form.type
+                    FROM progress
+                    JOIN form ON progress.documentID = form.documentID
+                    WHERE staffID = %s
+                      AND (
+                        -- Case 1: This is the first progress for the document
+                        progress.progressID = (
+                          SELECT MIN(first_progress.progressID)
+                          FROM progress AS first_progress
+                          WHERE first_progress.documentID = progress.documentID
+                        )
+                        OR
+                        -- Case 2: The previous progress was approved
+                        EXISTS (
                           SELECT 1
-                          FROM progress AS other_progress
-                          WHERE other_progress.documentID = progress.documentID
-                            AND other_progress.staffID != %s
-                            AND other_progress.isApprove = 'Approve'
+                          FROM progress AS prev_progress
+                          WHERE prev_progress.progressID = progress.progressID - 1
+                            AND prev_progress.documentID = progress.documentID
+                            AND prev_progress.isApprove = 'Approve'
+                        )
                       )
-                  );
-            """
+                      AND NOT EXISTS (
+                        SELECT 1
+                        FROM progress AS exclude_progress
+                        JOIN role ON exclude_progress.staff_roleID = role.roleID
+                        WHERE exclude_progress.documentID = progress.documentID
+                          AND exclude_progress.isApprove = 'Approve'
+                          AND role.roleName IN ('Dean', 'Head of dept')
+                          AND EXISTS (
+                            SELECT 1
+                            FROM progress AS other_progress
+                            WHERE other_progress.documentID = progress.documentID
+                              AND other_progress.staffID != %s
+                              AND other_progress.isApprove = 'Approve'
+                          )
+                      );"""
             cursor.execute(query, (id, id))
             result = cursor.fetchall()
             for r in result:
@@ -592,8 +540,8 @@ async def get_all_document(id: str):
         conn.close()
 
 
-@app.get("/api/documentDetail/{documentID}")
-async def get_document_by_id(documentID: str):
+@app.get("/api/documentDetail/{documentID}/userID/{id}")
+async def get_document_by_id(documentID: str, id: str):
     conn = get_db_connection()
     cursor = conn.cursor()
     progress = []
@@ -603,6 +551,35 @@ async def get_document_by_id(documentID: str):
                             WHERE documentID = %s"""
         cursor.execute(query_form_detail, (documentID,))
         detail_result = cursor.fetchone()
+
+        if not detail_result:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        query_role = """SELECT 'student' AS table_name FROM student WHERE studentID = %s
+                     UNION
+                     SELECT 'staff' AS table_name FROM staff WHERE staffID = %s"""
+        cursor.execute(query_role, (id, id))
+        role = cursor.fetchone()
+
+        if role is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        userRole = role[0]
+
+        if userRole == "student":
+            query_authority = """SELECT * 
+                                 FROM form 
+                                 WHERE documentID = %s AND studentID = %s"""
+            cursor.execute(query_authority, (documentID, id))
+            authority_result = cursor.fetchone()
+        else:
+            query_authority = """SELECT progressID 
+                              FROM progress 
+                              WHERE documentID = %s AND staffID = %s"""
+            cursor.execute(query_authority, (documentID, id))
+            authority_result = cursor.fetchone()
+
+        if not authority_result:
+            raise HTTPException(status_code=403, detail="You do not have permission to access this document")
 
         query_progress = """SELECT progress.*, concat(staff.firstName, " ", staff.lastName), 
                          role.roleName
@@ -636,10 +613,17 @@ async def get_document_by_id(documentID: str):
             "allProgress": progress
         }
 
+        if not document_info:
+            raise HTTPException(status_code=404, detail="Document not found")
+
         return document_info
 
+    except HTTPException as http_ex:
+        raise http_ex
+
     except Exception as e:
-        print(e)
+        print(f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
     finally:
         cursor.close()
@@ -652,9 +636,29 @@ async def approve(detail: ApproveDetail):
     cursor = conn.cursor()
 
     try:
+        # Check if progressID and documentID exist
+        check_query = """SELECT progressID, documentID 
+                         FROM progress 
+                         WHERE progressID = %s AND documentID = %s;"""
+        cursor.execute(check_query, (detail.progressID, detail.documentID))
+        result = cursor.fetchone()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Invalid progressID or documentID.")
+
+        # Check if staffID matches progressID and documentID
+        staff_check_query = """SELECT staffID 
+                               FROM progress 
+                               WHERE progressID = %s AND documentID = %s AND staffID = %s;"""
+        cursor.execute(staff_check_query, (detail.progressID, detail.documentID, detail.staffID))
+        staff_match = cursor.fetchone()
+
+        if not staff_match:
+            raise HTTPException(status_code=403, detail="Staff does not have the authority to approve this document.")
+
         update_query = """UPDATE progress
-                       SET isApprove = %s
-                       WHERE progressID = %s AND staffID = %s AND documentID = %s;"""
+                          SET isApprove = %s
+                          WHERE progressID = %s AND staffID = %s AND documentID = %s;"""
         cursor.execute(update_query, (
             detail.isApprove,
             detail.progressID,
@@ -662,10 +666,15 @@ async def approve(detail: ApproveDetail):
             detail.documentID
         ))
         conn.commit()
+
         return {"message": "Approve successfully."}
 
+    except HTTPException as http_exc:
+        raise http_exc
+
     except Exception as e:
-        print(e)
+        print(f"Error: {e}")
+        raise HTTPException(status_code=500, detail="An error occurred while processing the request.")
 
     finally:
         cursor.close()
@@ -678,6 +687,26 @@ async def reject(detail: RejectDetail):
     cursor = conn.cursor()
 
     try:
+        # Check if progressID and documentID exist
+        check_query = """SELECT progressID, documentID 
+                                 FROM progress 
+                                 WHERE progressID = %s AND documentID = %s;"""
+        cursor.execute(check_query, (detail.progressID, detail.documentID))
+        result = cursor.fetchone()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Invalid progressID or documentID.")
+
+        # Check if staffID matches progressID and documentID
+        staff_check_query = """SELECT staffID 
+                                       FROM progress 
+                                       WHERE progressID = %s AND documentID = %s AND staffID = %s;"""
+        cursor.execute(staff_check_query, (detail.progressID, detail.documentID, detail.staffID))
+        staff_match = cursor.fetchone()
+
+        if not staff_match:
+            raise HTTPException(status_code=403, detail="Staff does not have the authority to approve this document.")
+
         update_query = """UPDATE progress
                        SET isApprove = %s, comment = %s
                        WHERE progressID = %s AND staffID = %s AND documentID = %s;"""
@@ -691,8 +720,12 @@ async def reject(detail: RejectDetail):
         conn.commit()
         return {"message": "Reject successfully."}
 
+    except HTTPException as http_exc:
+        raise http_exc
+
     except Exception as e:
-        print(e)
+        print(f"Error: {e}")
+        raise HTTPException(status_code=500, detail="An error occurred while processing the request.")
 
     finally:
         cursor.close()
