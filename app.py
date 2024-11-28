@@ -69,6 +69,14 @@ class ApproveDetail(BaseModel):
     isApprove: str = "Approve"
 
 
+class RejectDetail(BaseModel):
+    progressID: int
+    staffID: int
+    documentID: int
+    isApprove: str = "Reject"
+    comment: str
+
+
 def get_db_connection():
     try:
         connection = mysql.connector.connect(
@@ -138,6 +146,7 @@ async def log_in(user: UserLogin):
                 "role": "Student",
                 "tel": userResult[5],
                 "alterEmail": userResult[6],
+                "year": userResult[7],
                 "departmentID": userResult[8],
                 "department": departmentName[0],
                 "facultyID": userResult[9],
@@ -352,10 +361,7 @@ async def create_document(form: FormCreate):
         if not staffID_results:
             raise HTTPException(status_code=404, detail="No staffIDs found for the given studentID")
 
-        # List to hold all staff details
         all_staff_details = []
-
-        # Loop through each staffID and get details from the staff table
         for (staffID,) in staffID_results:
             staff_query = """SELECT * FROM staff 
                           JOIN role ON staff.roleID = role.roleID 
@@ -410,10 +416,56 @@ async def get_all_document(id: str):
     cursor = conn.cursor()
     all_doc = []
 
+    # try:
+    #     query = """SELECT 'student' AS table_name FROM student WHERE studentID = %s
+    #             UNION
+    #             SELECT 'staff' AS table_name FROM staff WHERE staffID = %s"""
+    #     cursor.execute(query, (id, id))
+    #     result = cursor.fetchone()
+    #     if result is None:
+    #         raise HTTPException(status_code=404, detail="User not found")
+    #     userRole = result[0]
+    #
+    #     if userRole == "student":
+    #         query_form = """SELECT * FROM form WHERE studentID = %s"""
+    #         cursor.execute(query_form, (id,))
+    #         form_result = cursor.fetchall()
+    #         # query_progress = """SELECT * FROM progress
+    #         #                  JOIN staff ON staff.staffID = progress.staffID
+    #         #                  JOIN role ON role.roleID = staff.roleID
+    #         #                  WHERE progress.studentID = %s
+    #         #                  AND (
+    #         #                     (role.roleName = 'Head of dept' AND progress.isApprove = 'Approve')
+    #         #                     OR
+    #         #                     (role.roleName = 'Dean' AND progress.isApprove = 'Approve')
+    #         #                  );
+    #         #                  """
+    #         query_progress = """SELECT progress.*, role.roleName FROM progress
+    #                          JOIN staff ON staff.staffID = progress.staffID
+    #                          JOIN role ON role.roleID = staff.roleID
+    #                          WHERE progress.studentID = %s;"""
+    #         cursor.execute(query_progress, (id,))
+    #         progress_result = cursor.fetchall()
+    #
+    #         for p in progress_result:
+    #             print(f"documentID = {p[3]},"
+    #                   f"status = {p[5]},"
+    #                   f"role = {p[9]}")
+    #         for r in form_result:
+    #             document_info = {
+    #                 "documentID": r[0],
+    #                 "documentType": r[2],
+    #                 "createDate": r[9],
+    #                 "editDate": r[10],
+    #                 # "status": status[r]
+    #             }
+    #             all_doc.append(document_info)
+    #         return all_doc
+
     try:
         query = """SELECT 'student' AS table_name FROM student WHERE studentID = %s
-                UNION
-                SELECT 'staff' AS table_name FROM staff WHERE staffID = %s"""
+                    UNION
+                    SELECT 'staff' AS table_name FROM staff WHERE staffID = %s"""
         cursor.execute(query, (id, id))
         result = cursor.fetchone()
         if result is None:
@@ -421,28 +473,102 @@ async def get_all_document(id: str):
         userRole = result[0]
 
         if userRole == "student":
-            query = """SELECT * FROM form WHERE studentID = %s"""
-            cursor.execute(query, (id,))
-            result = cursor.fetchall()
-            print(result)
-            for r in result:
+            query_form = """SELECT * FROM form WHERE studentID = %s"""
+            cursor.execute(query_form, (id,))
+            form_result = cursor.fetchall()
+
+            query_progress = """SELECT progress.*, role.roleName 
+                                    FROM progress 
+                                    JOIN staff ON staff.staffID = progress.staffID
+                                    JOIN role ON role.roleID = staff.roleID
+                                    WHERE progress.studentID = %s"""
+            cursor.execute(query_progress, (id,))
+            progress_result = cursor.fetchall()
+
+            progress_by_document = {}
+            for p in progress_result:
+                documentID = p[3]
+                if documentID not in progress_by_document:
+                    progress_by_document[documentID] = []
+                progress_by_document[documentID].append({
+                    "status": p[5],
+                    "role": p[9]
+                })
+
+            for r in form_result:
+                documentID = r[0]
+                document_status = "Waiting for approve"
+
+                if documentID in progress_by_document:
+                    approvals = progress_by_document[documentID]
+
+                    # Check for "Reject"
+                    has_reject = any(a["status"] == "Reject" for a in approvals)
+                    if has_reject:
+                        document_status = "Reject"
+                    else:
+                        # Check for "Approve" conditions
+                        roles_with_approve = [a["role"] for a in approvals if a["status"] == "Approve"]
+                        if (
+                                "Dean" in roles_with_approve and
+                                "Head of dept" in roles_with_approve and
+                                len(roles_with_approve) >= 3
+                        ):
+                            document_status = "Approve"
+
                 document_info = {
-                    "documentID": r[0],
+                    "documentID": documentID,
                     "documentType": r[2],
                     "createDate": r[9],
                     "editDate": r[10],
-                    "status": "Approve"  # check status in progress table then show in here
+                    "status": document_status
                 }
                 all_doc.append(document_info)
             return all_doc
         else:
-            query = """SELECT progress.*, form.type FROM progress
-                    JOIN form ON progress.documentID = form.documentID
-                    WHERE staffID = %s AND progress.progressID"""
-            query_before_progress = """SELECT progress.*, form.type FROM progress
-                                JOIN form ON progress.documentID = form.documentID
-                                WHERE staffID = %s AND progress.progressID-1"""
-            cursor.execute(query, (id,))
+            # query = """SELECT progress.*, form.type FROM progress
+            #         JOIN form ON progress.documentID = form.documentID
+            #         WHERE staffID = %s AND progress.progressID"""
+            # query = """SELECT progress.*, form.type
+            #         FROM progress
+            #         JOIN form ON progress.documentID = form.documentID
+            #         WHERE staffID = %s
+            #           AND EXISTS (
+            #             SELECT 1
+            #             FROM progress AS prev_progress
+            #             WHERE prev_progress.progressID = progress.progressID - 1
+            #               AND prev_progress.documentID = progress.documentID
+            #               AND prev_progress.isApprove = 'Approve'
+            #           );"""
+            query = """
+                SELECT progress.*, form.type
+                FROM progress
+                JOIN form ON progress.documentID = form.documentID
+                WHERE staffID = %s
+                  AND EXISTS (
+                    SELECT 1
+                    FROM progress AS prev_progress
+                    WHERE prev_progress.progressID = progress.progressID - 1
+                      AND prev_progress.documentID = progress.documentID
+                      AND prev_progress.isApprove = 'Approve'
+                  )
+                  AND NOT EXISTS (
+                    SELECT 1
+                    FROM progress AS exclude_progress
+                    JOIN role ON exclude_progress.staff_roleID = role.roleID
+                    WHERE exclude_progress.documentID = progress.documentID
+                      AND exclude_progress.isApprove = 'Approve'
+                      AND role.roleName IN ('Dean', 'Head of dept')
+                      AND EXISTS (
+                          SELECT 1
+                          FROM progress AS other_progress
+                          WHERE other_progress.documentID = progress.documentID
+                            AND other_progress.staffID != %s
+                            AND other_progress.isApprove = 'Approve'
+                      )
+                  );
+            """
+            cursor.execute(query, (id, id))
             result = cursor.fetchall()
             for r in result:
                 document_info = {
@@ -526,13 +652,9 @@ async def approve(detail: ApproveDetail):
     cursor = conn.cursor()
 
     try:
-        update_query = """
-        UPDATE progress
-        SET isApprove = %s
-        WHERE progressID = %s
-          AND staffID = %s
-          AND documentID = %s;
-        """
+        update_query = """UPDATE progress
+                       SET isApprove = %s
+                       WHERE progressID = %s AND staffID = %s AND documentID = %s;"""
         cursor.execute(update_query, (
             detail.isApprove,
             detail.progressID,
@@ -541,6 +663,33 @@ async def approve(detail: ApproveDetail):
         ))
         conn.commit()
         return {"message": "Approve successfully."}
+
+    except Exception as e:
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.put("/api/reject")
+async def reject(detail: RejectDetail):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        update_query = """UPDATE progress
+                       SET isApprove = %s, comment = %s
+                       WHERE progressID = %s AND staffID = %s AND documentID = %s;"""
+        cursor.execute(update_query, (
+            detail.isApprove,
+            detail.comment,
+            detail.progressID,
+            detail.staffID,
+            detail.documentID
+        ))
+        conn.commit()
+        return {"message": "Reject successfully."}
 
     except Exception as e:
         print(e)
