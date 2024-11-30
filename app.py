@@ -432,10 +432,10 @@ async def get_all_document(id: str):
             form_result = cursor.fetchall()
 
             query_progress = """SELECT progress.*, role.roleName 
-                                    FROM progress 
-                                    JOIN staff ON staff.staffID = progress.staffID
-                                    JOIN role ON role.roleID = staff.roleID
-                                    WHERE progress.studentID = %s"""
+                             FROM progress 
+                             JOIN staff ON staff.staffID = progress.staffID
+                             JOIN role ON role.roleID = staff.roleID
+                             WHERE progress.studentID = %s"""
             cursor.execute(query_progress, (id,))
             progress_result = cursor.fetchall()
 
@@ -480,63 +480,6 @@ async def get_all_document(id: str):
                 all_doc.append(document_info)
             return all_doc
         else:
-            # query = """SELECT progress.*, form.type
-            #         FROM progress
-            #         JOIN form ON progress.documentID = form.documentID
-            #         WHERE staffID = %s
-            #           AND (
-            #             -- Case 1: This is the first progress for the document
-            #             progress.progressID = (
-            #               SELECT MIN(first_progress.progressID)
-            #               FROM progress AS first_progress
-            #               WHERE first_progress.documentID = progress.documentID
-            #             )
-            #             OR
-            #             -- Case 2: The previous progress was approved
-            #             EXISTS (
-            #               SELECT 1
-            #               FROM progress AS prev_progress
-            #               WHERE prev_progress.progressID = progress.progressID - 1
-            #                 AND prev_progress.documentID = progress.documentID
-            #                 AND prev_progress.isApprove = 'Approve'
-            #             )
-            #           )
-            #           AND NOT EXISTS (
-            #             SELECT 1
-            #             FROM progress AS exclude_progress
-            #             JOIN role ON exclude_progress.staff_roleID = role.roleID
-            #             WHERE exclude_progress.documentID = progress.documentID
-            #               AND exclude_progress.isApprove = 'Approve'
-            #               AND role.roleName IN ('Dean', 'Head of dept')
-            #               AND EXISTS (
-            #                 SELECT 1
-            #                 FROM progress AS other_progress
-            #                 WHERE other_progress.documentID = progress.documentID
-            #                   AND other_progress.staffID != %s
-            #                   AND other_progress.isApprove = 'Approve'
-            #               )
-            #               -- NEW CONDITION: Ensure the current Dean/Head of dept can approve
-            #               AND NOT EXISTS (
-            #                 SELECT 1
-            #                 FROM progress AS current_role_progress
-            #                 WHERE current_role_progress.documentID = progress.documentID
-            #                   AND current_role_progress.staffID = %s
-            #                   AND current_role_progress.isApprove = 'Approve'
-            #               )
-            #           );"""
-            # cursor.execute(query, (id, id, id))
-            # query = """SELECT progress.*, form.type
-            # FROM progress
-            # JOIN form ON progress.documentID = form.documentID
-            # WHERE progress.staffID = %s
-            # AND progress.isApprove = 'Waiting for approve'
-            # AND NOT EXISTS (
-            #     SELECT 1
-            #     FROM progress AS prev_progress
-            #     WHERE prev_progress.documentID = progress.documentID
-            #     AND prev_progress.progressID < progress.progressID
-            #     AND prev_progress.isApprove != 'Approve'
-            # );"""
             query = """SELECT progress.*, form.type
                         FROM progress
                         JOIN form ON progress.documentID = form.documentID
@@ -642,7 +585,8 @@ async def get_document_by_id(documentID: str, id: str):
                 "progressID": p[0],
                 "staffName": p[9],
                 "staffRole": p[10],
-                "status": p[5]
+                "status": p[5],
+                "comment": p[6]
             }
             progress.append(info)
 
