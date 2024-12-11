@@ -16,11 +16,13 @@ user = os.getenv("DB_USER")
 password = os.getenv("DB_PASSWORD")
 database = os.getenv("DB_DATABASE")
 frontend_url = os.getenv("FRONTEND_URL")
+frontend_url_secondary = os.getenv("FRONTEND_URL_SECONDARY")
+frontend_url_test = os.getenv("FRONTEND_URL_TEST")
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url],
+    allow_origins=[frontend_url, frontend_url_secondary, frontend_url_test],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -122,7 +124,7 @@ async def log_in(user: UserLogin):
             stored_password = passwordResult[0]
             ph.verify(stored_password, user.password)
         except Exception:
-            raise HTTPException(status_code=400, detail="Invalid password")
+            raise HTTPException(status_code=401, detail="Invalid password")
 
         if userRole == "student":
             # get all user data
@@ -192,142 +194,8 @@ async def log_in(user: UserLogin):
         conn.close()
 
 
-@app.post("/api/signup")
-async def sign_up(student: StudentSignUp):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    try:
-        # Hash the password
-        hashed_password = ph.hash(student.password)
-
-        # Check for advisor1 (required)
-        cursor.execute("SELECT staffID FROM staff WHERE CONCAT(firstName, ' ', lastName) = %s",
-                       (student.advisor1_fullname,))
-        advisor1_id = cursor.fetchone()
-        if not advisor1_id:
-            raise HTTPException(status_code=400, detail="Advisor 1 not found")
-
-        # Check for advisor2 (optional but must exist if provided)
-        advisor2_id = None
-        if student.advisor2_fullname:
-            cursor.execute("SELECT staffID FROM staff WHERE CONCAT(firstName, ' ', lastName) = %s",
-                           (student.advisor2_fullname,))
-            advisor2_id = cursor.fetchone()
-            if not advisor2_id:
-                raise HTTPException(status_code=400, detail="Advisor 2 not found")
-
-        # Check for faculty
-        cursor.execute("SELECT facultyID FROM faculty WHERE facultyName = %s", (student.faculty,))
-        faculty_id = cursor.fetchone()
-        if not faculty_id:
-            raise HTTPException(status_code=400, detail="Faculty not found")
-
-        # Check if department exists
-        cursor.execute("SELECT departmentID, facultyID FROM department WHERE departmentName = %s",
-                       (student.department,))
-        department_record = cursor.fetchone()
-        print(department_record)
-        if not department_record:
-            raise HTTPException(status_code=400, detail="Department not found")
-
-        # Check if department belongs to the specified faculty
-        if department_record[1] != faculty_id[0]:
-            raise HTTPException(status_code=400, detail="Department does not belong to the specified faculty")
-
-        # Insert new student
-        insert_student_query = """
-            INSERT INTO student (studentID, username, password, firstname, lastname,
-                                 tel, alterEmail, facultyID, departmentID, signature)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        cursor.execute(insert_student_query, (
-            student.studentID,
-            student.username,
-            hashed_password,
-            student.firstname,
-            student.lastname,
-            student.phone_number,
-            student.alter_email,
-            faculty_id[0],
-            department_record[0],
-            student.signature
-        ))
-
-        # Insert advisor1
-        insert_advisor_query = """
-            INSERT INTO student_advisor (staffID, studentID)
-            VALUES (%s, %s)
-        """
-        cursor.execute(insert_advisor_query, (advisor1_id[0], student.studentID))
-
-        # Insert advisor2 (optional)
-        if advisor2_id:
-            cursor.execute(insert_advisor_query, (advisor2_id[0], student.studentID))
-
-        conn.commit()
-        return {"message": "User registered successfully"}
-
-    except mysql.connector.Error as e:
-        conn.rollback()
-        raise HTTPException(status_code=400, detail=f"User registration failed: {e}")
-
-    finally:
-        cursor.close()
-        conn.close()
-
-
-@app.get("/api/allStaff")
-def get_signer():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    try:
-
-        cursor.execute("SELECT * FROM staff;")
-        roles = cursor.fetchall()
-        return roles
-
-    finally:
-        cursor.close()
-        conn.close()
-
-
-@app.get("/api/allFaculty")
-def get_faculty():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    try:
-
-        cursor.execute("SELECT * FROM faculty;")
-        roles = cursor.fetchall()
-        return roles
-
-    finally:
-        cursor.close()
-        conn.close()
-
-
-@app.get("/api/allDepartment")
-def get_department():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    try:
-        cursor.execute("""SELECT department.departmentID, 
-                       department.departmentName, faculty.facultyName 
-                       FROM department JOIN faculty 
-                       ON department.facultyID = faculty.facultyID;""")
-        roles = cursor.fetchall()
-        return roles
-
-    finally:
-        cursor.close()
-        conn.close()
-
-
 @app.post("/api/add")
+# @app.post("/api/document/add")
 async def create_document(form: FormCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -387,6 +255,9 @@ async def create_document(form: FormCreate):
         insert_progress = """INSERT INTO progress (staffID, staff_roleID, documentID,
                           studentID, isApprove, createDate, editDate)
                           VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+        # insert_progress = """INSERT INTO progress (step, staffID, staff_roleID, documentID,
+        #                           studentID, isApprove, createDate, editDate)
+        #                           VALUES (%s, %s, %s, %s, %s, %s, %s)"""
         for s in all_staff_details:
             cursor.execute(insert_progress, (
                 s[0],
@@ -397,6 +268,22 @@ async def create_document(form: FormCreate):
                 create_date,
                 edit_date
             ))
+        # step = []
+        # if len(all_staff_details) == 4: # student has 2 advisor
+        #     step = [1, 1, 2, 3]
+        # else:
+        #     step = [1, 2, 3] # student has 1 advisor
+        # for s in all_staff_details:
+        #     cursor.execute(insert_progress, (
+        #         step[all_staff_details.index(s)],
+        #         s[0],
+        #         s[7],
+        #         document_id,
+        #         form.studentID,
+        #         "Waiting for approve",
+        #         create_date,
+        #         edit_date
+        #     ))
 
         conn.commit()
         return {"message": "Created successfully"}, 201
@@ -411,6 +298,7 @@ async def create_document(form: FormCreate):
 
 
 @app.get("/api/allDocument/{id}")
+# @app.get("/api/document/all/{id}")
 async def get_all_document(id: str):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -531,6 +419,7 @@ async def get_all_document(id: str):
 
 
 @app.get("/api/documentDetail/{documentID}/userID/{id}")
+# @app.get("/api/document/detail/{documentID}/userID/{id}")
 async def get_document_by_id(documentID: str, id: str):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -622,6 +511,7 @@ async def get_document_by_id(documentID: str, id: str):
 
 
 @app.put("/api/approve")
+# @app.put("/api/staff/approve")
 async def approve(detail: ApproveDetail):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -694,6 +584,7 @@ async def approve(detail: ApproveDetail):
 
 
 @app.put("/api/reject")
+# @app.put("/api/staff/reject")
 async def reject(detail: RejectDetail):
     conn = get_db_connection()
     cursor = conn.cursor()
