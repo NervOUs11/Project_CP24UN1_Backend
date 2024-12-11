@@ -1,12 +1,12 @@
 -- Insert data into `faculty` table
-INSERT INTO `faculty` (`facultyName`) VALUES
+INSERT INTO `kmutt_database`.`faculty` (`facultyName`) VALUES
 ('Engineering'),
 ('Science'),
 ('Business Administration'),
 ('SIT');
 
 -- Insert data into `department` table
-INSERT INTO `department` (`departmentName`, `facultyID`) VALUES
+INSERT INTO `kmutt_database`.`department` (`departmentName`, `facultyID`) VALUES
 ('Computer Science', 1),
 ('Electrical Engineering', 1),
 ('Physics', 2),
@@ -16,14 +16,14 @@ INSERT INTO `department` (`departmentName`, `facultyID`) VALUES
 ('DSI', 4);
 
 -- Insert data into `role` table
-INSERT INTO `role` (`roleName`) VALUES
+INSERT INTO `kmutt_database`.`role` (`roleName`) VALUES
 ('Administrator'),
 ('Advisor'),
 ('Head of dept'),
 ('Dean');
 
 -- Insert data into `staff` table
-INSERT INTO `staff` (`username`, `password`, `firstName`, `lastName`, `tel`, `alterEmail`, `roleID`, `departmentID`, `facultyID`) VALUES
+INSERT INTO `kmutt_database`.`staff` (`username`, `password`, `firstName`, `lastName`, `tel`, `alterEmail`, `roleID`, `departmentID`, `facultyID`) VALUES
 ('staff1@kmutt.ac.th', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
 'John', 'Doe', '0912345678', 'john.doe@gmail.com', 1, 1, 1),
 ('staff2@kmutt.ac.th', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
@@ -42,7 +42,7 @@ INSERT INTO `staff` (`username`, `password`, `firstName`, `lastName`, `tel`, `al
 'Tim', 'S.', '0912345111', 'Tim@gmail.com', 4, 3, 2);
 
 -- Insert data into `student` table
-INSERT INTO `student` (`studentID`, `username`, `password`, `firstName`, `lastName`, `tel`, `alterEmail`,
+INSERT INTO `kmutt_database`.`student` (`studentID`, `username`, `password`, `firstName`, `lastName`, `tel`, `alterEmail`,
 `year`, `departmentID`, `facultyID`, `currentGPA`, `cumulativeGPA`) VALUES
 (64130500045, 'nitis.visa@kmutt.ac.th', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
 'Nitis', 'Visayataksin', '0812345678', 'v.ounitit@gmail.com', 2, 5, 4, 3, 2.9),
@@ -50,7 +50,7 @@ INSERT INTO `student` (`studentID`, `username`, `password`, `firstName`, `lastNa
 'Phongsathon', 'Chansongkrao', '0812345678', 'kitokidandkwa@gmail.com', 3, 3, 2, 3, 3.2);
 
 -- Insert data into `student_advisor` table
-INSERT INTO `student_advisor` (`staffID`, `studentID`) VALUES
+INSERT INTO `kmutt_database`.`student_advisor` (`staffID`, `studentID`) VALUES
 (2, 64130500045),
 (3, 64130500045),
 (4, 64130500051);

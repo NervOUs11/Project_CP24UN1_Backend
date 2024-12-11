@@ -131,14 +131,24 @@ async def log_in(user: UserLogin):
             select_user = "SELECT * FROM student WHERE username = %s"
             cursor.execute(select_user, (user.username,))
             userResult = cursor.fetchone()
+
             # get department name
             select_department = "SELECT departmentName FROM department WHERE departmentID = %s"
             cursor.execute(select_department, (userResult[8],))
             departmentName = cursor.fetchone()
+
             # get faculty name
             select_faculty = "SELECT facultyName FROM faculty WHERE facultyID = %s"
             cursor.execute(select_faculty, (userResult[9],))
             facultyName = cursor.fetchone()
+
+            # get advisor
+            select_advisor = """SELECT concat(staff.firstName, " ", staff.lastName)
+                             FROM student_advisor 
+                             JOIN staff ON staff.staffID = student_advisor.staffID
+                             WHERE studentID = %s"""
+            cursor.execute(select_advisor, (userResult[0],))
+            advisorName = cursor.fetchall()
 
             user_info = {
                 "studentID": userResult[0],
@@ -154,7 +164,8 @@ async def log_in(user: UserLogin):
                 "facultyID": userResult[9],
                 "faculty": facultyName[0],
                 "currentGPA": userResult[10],
-                "cumulativeGPA": userResult[11]
+                "cumulativeGPA": userResult[11],
+                "advisor": advisorName
             }
         else:  # staff
             # get all user data
@@ -194,8 +205,7 @@ async def log_in(user: UserLogin):
         conn.close()
 
 
-@app.post("/api/add")
-# @app.post("/api/document/add")
+@app.post("/api/document/add")
 async def create_document(form: FormCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -252,30 +262,14 @@ async def create_document(form: FormCreate):
         if staff:
             all_staff_details.extend(staff)
 
-        insert_progress = """INSERT INTO progress (staffID, staff_roleID, documentID,
+        # insert_progress = """INSERT INTO progress (staffID, staff_roleID, documentID,
+        #                   studentID, isApprove, createDate, editDate)
+        #                   VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+        insert_progress = """INSERT INTO progress (step, staffID, staff_roleID, documentID,
                           studentID, isApprove, createDate, editDate)
-                          VALUES (%s, %s, %s, %s, %s, %s, %s)"""
-        # insert_progress = """INSERT INTO progress (step, staffID, staff_roleID, documentID,
-        #                           studentID, isApprove, createDate, editDate)
-        #                           VALUES (%s, %s, %s, %s, %s, %s, %s)"""
-        for s in all_staff_details:
-            cursor.execute(insert_progress, (
-                s[0],
-                s[7],
-                document_id,
-                form.studentID,
-                "Waiting for approve",
-                create_date,
-                edit_date
-            ))
-        # step = []
-        # if len(all_staff_details) == 4: # student has 2 advisor
-        #     step = [1, 1, 2, 3]
-        # else:
-        #     step = [1, 2, 3] # student has 1 advisor
+                          VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
         # for s in all_staff_details:
         #     cursor.execute(insert_progress, (
-        #         step[all_staff_details.index(s)],
         #         s[0],
         #         s[7],
         #         document_id,
@@ -284,6 +278,23 @@ async def create_document(form: FormCreate):
         #         create_date,
         #         edit_date
         #     ))
+        step_count = 0
+        if len(all_staff_details) == 4:  # student has 2 advisor
+            step = [1, 1, 2, 3]
+        else:
+            step = [1, 2, 3]  # student has 1 advisor
+        for s in all_staff_details:
+            cursor.execute(insert_progress, (
+                step[step_count],
+                s[0],
+                s[7],
+                document_id,
+                form.studentID,
+                "Waiting for approve",
+                create_date,
+                edit_date
+            ))
+            step_count += 1
 
         conn.commit()
         return {"message": "Created successfully"}, 201
@@ -297,8 +308,7 @@ async def create_document(form: FormCreate):
         conn.close()
 
 
-@app.get("/api/allDocument/{id}")
-# @app.get("/api/document/all/{id}")
+@app.get("/api/document/all/{id}")
 async def get_all_document(id: str):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -329,12 +339,12 @@ async def get_all_document(id: str):
 
             progress_by_document = {}
             for p in progress_result:
-                documentID = p[3]
+                documentID = p[4]
                 if documentID not in progress_by_document:
                     progress_by_document[documentID] = []
                 progress_by_document[documentID].append({
-                    "status": p[5],
-                    "role": p[9]
+                    "status": p[6],
+                    "role": p[10]
                 })
 
             for r in form_result:
@@ -368,44 +378,65 @@ async def get_all_document(id: str):
                 all_doc.append(document_info)
             return all_doc
         else:
+            # query = """SELECT progress.*, form.type
+            #             FROM progress
+            #             JOIN form ON progress.documentID = form.documentID
+            #             WHERE progress.staffID = %s
+            #             AND (
+            #              -- Case 1: This is the first progress for the document
+            #              progress.progressID = (
+            #                SELECT MIN(first_progress.progressID)
+            #                FROM progress AS first_progress
+            #                WHERE first_progress.documentID = progress.documentID
+            #              )
+            #              OR
+            #              -- Case 2: The previous progress was approved
+            #              EXISTS (
+            #                SELECT 1
+            #                FROM progress AS prev_progress
+            #                WHERE prev_progress.progressID = progress.progressID - 1
+            #                  AND prev_progress.documentID = progress.documentID
+            #                  AND (
+            #                     prev_progress.isApprove = 'Approve'
+            #                     OR
+            #                     prev_progress.isApprove = 'Other advisor approve'
+            #                  )
+            #              )
+            #            )
+            #         """
             query = """SELECT progress.*, form.type
-                        FROM progress
-                        JOIN form ON progress.documentID = form.documentID
-                        WHERE progress.staffID = %s
-                        AND (
-                         -- Case 1: This is the first progress for the document
-                         progress.progressID = (
-                           SELECT MIN(first_progress.progressID)
-                           FROM progress AS first_progress
-                           WHERE first_progress.documentID = progress.documentID
+                    FROM progress
+                    JOIN form ON progress.documentID = form.documentID
+                    WHERE progress.staffID = %s
+                    AND (
+                     -- Case 1: This is the first step for the document
+                     progress.step = 1
+                     OR
+                     -- Case 2: The previous step was approved
+                     EXISTS (
+                       SELECT 1
+                       FROM progress AS prev_progress
+                       WHERE prev_progress.step = progress.step - 1
+                         AND prev_progress.documentID = progress.documentID
+                         AND (
+                            prev_progress.isApprove = 'Approve' 
+                            OR
+                            prev_progress.isApprove = 'Other advisor approve'
                          )
-                         OR
-                         -- Case 2: The previous progress was approved
-                         EXISTS (
-                           SELECT 1
-                           FROM progress AS prev_progress
-                           WHERE prev_progress.progressID = progress.progressID - 1
-                             AND prev_progress.documentID = progress.documentID
-                             AND (
-                                prev_progress.isApprove = 'Approve' 
-                                OR
-                                prev_progress.isApprove = 'Other advisor approve'
-                             )
-                         )
-                       )
-                    """
+                     )
+                   )"""
             cursor.execute(query, (id, ))
             result = cursor.fetchall()
             for r in result:
                 document_info = {
                     "progessID": r[0],
-                    "documentID": r[3],
-                    "studentID": r[4],
-                    "isApprove": r[5],
-                    "comment": r[6],
-                    "createDate": r[7],
-                    "editDate": r[8],
-                    "documentType": r[9]
+                    "documentID": r[4],
+                    "studentID": r[5],
+                    "isApprove": r[6],
+                    "comment": r[7],
+                    "createDate": r[8],
+                    "editDate": r[9],
+                    "documentType": r[10]
                 }
                 all_doc.append(document_info)
             return all_doc
@@ -418,8 +449,7 @@ async def get_all_document(id: str):
         conn.close()
 
 
-@app.get("/api/documentDetail/{documentID}/userID/{id}")
-# @app.get("/api/document/detail/{documentID}/userID/{id}")
+@app.get("/api/userID/{id}/document/detail/{documentID}")
 async def get_document_by_id(documentID: str, id: str):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -472,10 +502,10 @@ async def get_document_by_id(documentID: str, id: str):
         for p in progress_result:
             info = {
                 "progressID": p[0],
-                "staffName": p[9],
-                "staffRole": p[10],
-                "status": p[5],
-                "comment": p[6]
+                "staffName": p[10],
+                "staffRole": p[11],
+                "status": p[6],
+                "comment": p[7]
             }
             progress.append(info)
 
@@ -510,8 +540,7 @@ async def get_document_by_id(documentID: str, id: str):
         conn.close()
 
 
-@app.put("/api/approve")
-# @app.put("/api/staff/approve")
+@app.put("/api/staff/approve")
 async def approve(detail: ApproveDetail):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -583,8 +612,7 @@ async def approve(detail: ApproveDetail):
         conn.close()
 
 
-@app.put("/api/reject")
-# @app.put("/api/staff/reject")
+@app.put("/api/staff/reject")
 async def reject(detail: RejectDetail):
     conn = get_db_connection()
     cursor = conn.cursor()

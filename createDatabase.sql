@@ -141,6 +141,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `kmutt_database`.`progress` (
   `progressID` INT NOT NULL AUTO_INCREMENT,
+  `step` INT NOT NULL,
   `staffID` INT NOT NULL,
   `staff_roleID` INT NOT NULL,
   `documentID` INT NOT NULL,
