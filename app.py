@@ -502,6 +502,7 @@ async def get_document_by_id(documentID: str, id: str):
         for p in progress_result:
             info = {
                 "progressID": p[0],
+                "staffID": p[2],
                 "staffName": p[10],
                 "staffRole": p[11],
                 "status": p[6],
@@ -540,7 +541,7 @@ async def get_document_by_id(documentID: str, id: str):
         conn.close()
 
 
-@app.put("/api/staff/approve")
+@app.put("/api/document/approve")
 async def approve(detail: ApproveDetail):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -588,8 +589,8 @@ async def approve(detail: ApproveDetail):
 
         if staffID:
             update_other_approve_query = """UPDATE progress
-                                             SET isApprove = %s
-                                             WHERE staffID = %s AND documentID = %s;"""
+                                         SET isApprove = %s
+                                         WHERE staffID = %s AND documentID = %s;"""
             cursor.execute(update_other_approve_query, (
                 "Other advisor approve",
                 staffID[0],
@@ -612,7 +613,7 @@ async def approve(detail: ApproveDetail):
         conn.close()
 
 
-@app.put("/api/staff/reject")
+@app.put("/api/document/reject")
 async def reject(detail: RejectDetail):
     conn = get_db_connection()
     cursor = conn.cursor()
