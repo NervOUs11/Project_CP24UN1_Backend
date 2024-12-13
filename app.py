@@ -1,12 +1,13 @@
 import mysql.connector
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from argon2 import PasswordHasher
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from sendEmail import email_notification, EmailSchema
 
 app = FastAPI()
 ph = PasswordHasher()
@@ -275,10 +276,18 @@ async def create_document(form: FormCreate):
                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
 
         step_count = 0
+        main_email_2 = None
+        alter_email_2 = None
         if len(all_staff_details) == 4:  # student has 2 advisor
             step = [1, 1, 2, 3]
+            main_email_1 = all_staff_details[0][1]  # first advisor main email
+            alter_email_1 = all_staff_details[0][6]  # first advisor alter email
+            main_email_2 = all_staff_details[1][1]  # second advisor main email
+            alter_email_2 = all_staff_details[1][6]  # second advisor alter email
         else:
             step = [1, 2, 3]  # student has 1 advisor
+            main_email_1 = all_staff_details[0][1]  # first advisor main email
+            alter_email_1 = all_staff_details[0][6]  # first advisor alter email
         for s in all_staff_details:
             cursor.execute(insert_progress, (
                 step[step_count],
@@ -293,6 +302,39 @@ async def create_document(form: FormCreate):
             step_count += 1
 
         conn.commit()
+
+        # Send email notification
+        subject = "New Document to sign."
+        body = (f"You have document to sign\n"
+                f"From student ID: {form.studentID}\n"
+                f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
+
+        # If student has 1 advisor (main_email_2 and alter_email_2 is None)
+        if main_email_2 is None and alter_email_2 is None:
+            email_payload = {
+                "primary_recipient": main_email_1,
+                "alternate_recipient": alter_email_1,
+                "subject": subject,
+                "body": body
+            }
+            await email_notification(EmailSchema(**email_payload))
+        # If student has 2 advisor
+        else:
+            email_payload = {
+                "primary_recipient": main_email_1,
+                "alternate_recipient": alter_email_1,
+                "subject": subject,
+                "body": body
+            }
+            email_payload_2 = {
+                "primary_recipient": main_email_2,
+                "alternate_recipient": alter_email_2,
+                "subject": subject,
+                "body": body
+            }
+            await email_notification(EmailSchema(**email_payload))
+            await email_notification(EmailSchema(**email_payload_2))
+
         return {"message": "Created successfully"}, 201
 
     except mysql.connector.Error as e:
@@ -539,6 +581,7 @@ async def approve(detail: ApproveDetail):
         if not staff_match:
             raise HTTPException(status_code=403, detail="Staff does not have the authority to approve this document")
 
+        # Approve form
         update_approve_query = """UPDATE progress
                                SET isApprove = %s
                                WHERE progressID = %s AND staffID = %s AND documentID = %s"""
@@ -549,6 +592,7 @@ async def approve(detail: ApproveDetail):
             detail.documentID
         ))
 
+        # If student has 2 advisor set another advisor isApprove column to "Other advisor approve"
         other_advisor_query = """SELECT progress.staffID, role.roleName 
                               FROM progress
                               JOIN role ON progress.staff_roleID = role.roleID
@@ -558,7 +602,6 @@ async def approve(detail: ApproveDetail):
                               AND  progress.isApprove = 'Waiting for approve'"""
         cursor.execute(other_advisor_query, (detail.documentID, detail.staffID))
         staffID = cursor.fetchone()
-
         if staffID:
             update_other_approve_query = """UPDATE progress
                                          SET isApprove = %s
@@ -568,6 +611,30 @@ async def approve(detail: ApproveDetail):
                 staffID[0],
                 detail.documentID
             ))
+
+        # Send email to notify next staff
+        next_staff_query = """SELECT progress.step, progress.studentID, staff.username, staff.alterEmail
+                           FROM staff
+                           JOIN progress ON staff.staffID = progress.staffID
+                           WHERE progress.documentID = %s
+                           AND progress.isApprove = 'Waiting for approve'
+                           GROUP BY staff.staffID
+                           ORDER BY progress.step ASC
+                           LIMIT 1"""
+        cursor.execute(next_staff_query, (detail.documentID, ))
+        next_staff = cursor.fetchone()
+        if next_staff:
+            subject = "New Document to sign."
+            body = (f"You have document to sign\n"
+                    f"From student ID: {next_staff[1]}\n"
+                    f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
+            email_payload = {
+                "primary_recipient": next_staff[2],
+                "alternate_recipient": next_staff[3],
+                "subject": subject,
+                "body": body
+            }
+            await email_notification(EmailSchema(**email_payload))
 
         conn.commit()
 

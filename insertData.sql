@@ -24,22 +24,22 @@ INSERT INTO `kmutt_database`.`role` (`roleName`) VALUES
 
 -- Insert data into `staff` table
 INSERT INTO `kmutt_database`.`staff` (`username`, `password`, `firstName`, `lastName`, `tel`, `alterEmail`, `roleID`, `departmentID`, `facultyID`) VALUES
-('staff1@kmutt.ac.th', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
-'John', 'Doe', '0912345678', 'john.doe@gmail.com', 1, 1, 1),
-('staff2@kmutt.ac.th', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
-'Jane', 'Smith', '0912345679', 'jane.smith@gmail.com', 2, 5, 4),
-('staff3@kmutt.ac.th', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
-'Bob', 'Johnson', '0912345680', 'bob.johnson@gmail.com', 2, 5, 4),
-('staff4@kmutt.ac.th', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
-'Tom', 'Lee', '0912345111', 'Tom.lee@gmail.com', 2, 3, 2),
+('staff1.johndoe@gmail.com', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
+'John', 'Doe', '0912345678', 'jonathan.deoe@gmail.com', 1, 1, 1),
+('staff2.janesmith@gmail.com', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
+'Jane', 'Smith', '0912345679', 'jensen.smithx@gmail.com', 2, 5, 4),
+('staff3.bobjohnson@gmail.com', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
+'Bob', 'Johnson', '0912345680', 'bobbybron.johnson@gmail.com', 2, 5, 4),
+('staff4.tomlee@gmail.com', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
+'Tom', 'Lee', '0912345111', 'tommory.lee@gmail.com', 2, 3, 2),
 ('staff5@kmutt.ac.th', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
-'Alice', 'A.', '0912345111', 'Alice@gmail.com', 3, 5, 4),
+'Alice', 'A.', '0912345111', 'domchowhurnroman@gmail.com', 3, 5, 4),
 ('staff6@kmutt.ac.th', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
-'Ben', 'B.', '0912345111', 'Ben@gmail.com', 4, 5, 4),
+'Ben', 'B.', '0912345111', 'domchowhurnromanII@gmail.com', 4, 5, 4),
 ('staff7@kmutt.ac.th', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
-'George', 'S.', '0912345111', 'George@gmail.com', 3, 3, 2),
+'George', 'S.', '0912345111', 'domchowhurnromanIII@gmail.com', 3, 3, 2),
 ('staff8@kmutt.ac.th', '$argon2id$v=19$m=65536,t=3,p=4$pMjaa2R7Rn6Eq5aXNzuzew$JAMNRXN62tpJ6dbLuN9DfxdxjQZNMuiOAY3lrr8MQ2A',
-'Tim', 'S.', '0912345111', 'Tim@gmail.com', 4, 3, 2);
+'Tim', 'S.', '0912345111', 'kitokidandkwa@gmail.com', 4, 3, 2);
 
 -- Insert data into `student` table
 INSERT INTO `kmutt_database`.`student` (`studentID`, `username`, `password`, `firstName`, `lastName`, `tel`, `alterEmail`,
