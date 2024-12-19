@@ -38,6 +38,21 @@ class AbsenceFormUpdate(BaseModel):
     attachmentFile2Name: Optional[str] = None
 
 
+class ApproveDetail(BaseModel):
+    progressID: int
+    staffID: int
+    documentID: int
+    status: str = "Approve"
+
+
+class RejectDetail(BaseModel):
+    progressID: int
+    staffID: int
+    documentID: int
+    status: str = "Reject"
+    comment: str
+
+
 def get_db_connection():
     try:
         connection = mysql.connector.connect(
@@ -60,7 +75,7 @@ async def create_absence_document(form: AbsenceFormCreate):
     try:
         create_date = datetime.now()
         edit_date = create_date
-        insert_form = """INSERT INTO form (studentID, type, startTime, endTime, detail, attachmentFile1,
+        insert_form = """INSERT INTO absenceDocument (studentID, type, startTime, endTime, detail, attachmentFile1,
                       attachmentFile2, attachmentFile2Name, createDate, editDate)
                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
         cursor.execute(insert_form, (
@@ -109,8 +124,8 @@ async def create_absence_document(form: AbsenceFormCreate):
         if staff:
             all_staff_details.extend(staff)
 
-        insert_progress = """INSERT INTO progress (step, staffID, staff_roleID, documentID,
-                          studentID, isApprove, createDate, editDate)
+        insert_progress = """INSERT INTO absenceProgress (step, staffID, staff_roleID, documentID,
+                          studentID, status, createDate, editDate)
                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
 
         step_count = 0
@@ -130,7 +145,7 @@ async def create_absence_document(form: AbsenceFormCreate):
             cursor.execute(insert_progress, (
                 step[step_count],
                 s[0],
-                s[7],
+                s[6],
                 document_id,
                 form.studentID,
                 "Waiting for approve",
@@ -190,7 +205,7 @@ async def delete_absence_document(documentID: str, id: str):
 
     try:
         document_check_query = """SELECT * 
-                               FROM form 
+                               FROM absenceDocument 
                                WHERE documentID = %s"""
         cursor.execute(document_check_query, (documentID,))
         document_match = cursor.fetchone()
@@ -198,18 +213,18 @@ async def delete_absence_document(documentID: str, id: str):
             raise HTTPException(status_code=404, detail="Document not found")
 
         user_check_query = """SELECT * 
-                           FROM form 
+                           FROM absenceDocument 
                            WHERE studentID = %s AND documentID = %s"""
         cursor.execute(user_check_query, (id, documentID))
         user_match = cursor.fetchone()
         if not user_match:
             raise HTTPException(status_code=403, detail="User do not have permission to delete")
 
-        delete_in_progress = """DELETE FROM progress
+        delete_in_progress = """DELETE FROM absenceProgress
                              WHERE studentID = %s AND documentID = %s"""
         cursor.execute(delete_in_progress, (id, documentID))
 
-        delete_in_form = """DELETE FROM form
+        delete_in_form = """DELETE FROM absenceDocument
                          WHERE studentID = %s AND documentID = %s"""
         cursor.execute(delete_in_form, (id, documentID))
 
@@ -233,7 +248,7 @@ async def update_absence_document(documentID: str, id: str, form: AbsenceFormUpd
 
     try:
         document_check_query = """SELECT * 
-                               FROM form 
+                               FROM absenceDocument 
                                WHERE documentID = %s"""
         cursor.execute(document_check_query, (documentID,))
         document_match = cursor.fetchone()
@@ -241,7 +256,7 @@ async def update_absence_document(documentID: str, id: str, form: AbsenceFormUpd
             raise HTTPException(status_code=404, detail="Document not found")
 
         user_check_query = """SELECT * 
-                           FROM form 
+                           FROM absenceDocument 
                            WHERE studentID = %s AND documentID = %s"""
         cursor.execute(user_check_query, (id, documentID))
         user_match = cursor.fetchone()
@@ -249,7 +264,7 @@ async def update_absence_document(documentID: str, id: str, form: AbsenceFormUpd
             raise HTTPException(status_code=403, detail="User do not have permission to edit")
 
         editDate = datetime.now()
-        update_form = """UPDATE form
+        update_form = """UPDATE absenceDocument
                       SET type = %s, startTime = %s, endTime = %s, detail = %s, 
                       attachmentFile1 = %s, attachmentFile2 = %s, attachmentFile2Name = %s, editDate = %s
                       WHERE documentID = %s and studentID = %s"""
@@ -266,8 +281,8 @@ async def update_absence_document(documentID: str, id: str, form: AbsenceFormUpd
             id
         ))
 
-        update_progress = """UPDATE progress
-                          SET isApprove = %s, editDate = %s
+        update_progress = """UPDATE absenceProgress
+                          SET status = %s, editDate = %s
                           WHERE documentID = %s and studentID = %s"""
         cursor.execute(update_progress, (
             "Waiting for approve",
@@ -284,6 +299,240 @@ async def update_absence_document(documentID: str, id: str, form: AbsenceFormUpd
 
     except Exception as e:
         print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+async def detail_absence_document(documentID: str, id: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    progress = []
+
+    try:
+        query_form_detail = """SELECT * FROM absenceDocument
+                            WHERE documentID = %s"""
+        cursor.execute(query_form_detail, (documentID,))
+        detail_result = cursor.fetchone()
+
+        if not detail_result:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        query_role = """SELECT 'student' AS table_name FROM student WHERE studentID = %s
+                     UNION
+                     SELECT 'staff' AS table_name FROM staff WHERE staffID = %s"""
+        cursor.execute(query_role, (id, id))
+        role = cursor.fetchone()
+
+        if role is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        userRole = role[0]
+
+        if userRole == "student":
+            query_authority = """SELECT * 
+                              FROM absenceDocument 
+                              WHERE documentID = %s AND studentID = %s"""
+            cursor.execute(query_authority, (documentID, id))
+            authority_result = cursor.fetchone()
+        else:
+            query_authority = """SELECT progressID 
+                              FROM absenceProgress 
+                              WHERE documentID = %s AND staffID = %s"""
+            cursor.execute(query_authority, (documentID, id))
+            authority_result = cursor.fetchone()
+
+        if not authority_result:
+            raise HTTPException(status_code=403, detail="You do not have permission to access this document")
+
+        query_progress = """SELECT absenceProgress.*, concat(staff.firstName, " ", staff.lastName), 
+                         role.roleName
+                         FROM absenceProgress
+                         JOIN role ON absenceProgress.staff_roleID = role.roleID
+                         JOIN staff ON absenceProgress.staffID = staff.staffID
+                         WHERE documentID = %s"""
+        cursor.execute(query_progress, (documentID,))
+        progress_result = cursor.fetchall()
+
+        for p in progress_result:
+            info = {
+                "progressID": p[0],
+                "staffID": p[2],
+                "staffName": p[10],
+                "staffRole": p[11],
+                "status": p[6],
+                "comment": p[7]
+            }
+            progress.append(info)
+
+        document_info = {
+            "DocumentID": detail_result[0],
+            "DocumentType": detail_result[2],
+            "startTime": detail_result[3],
+            "endTime": detail_result[4],
+            "detail": detail_result[5],
+            "file1": detail_result[6],
+            "file2": detail_result[7],
+            "file2Name": detail_result[8],
+            "createDate": detail_result[9],
+            "editDate": detail_result[10],
+            "allProgress": progress
+        }
+
+        if not document_info:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        return document_info
+
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+async def approve_absence_document(detail: ApproveDetail):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Check if progressID and documentID exist
+        check_query = """SELECT progressID, documentID 
+                      FROM absenceProgress 
+                      WHERE progressID = %s AND documentID = %s"""
+        cursor.execute(check_query, (detail.progressID, detail.documentID))
+        result = cursor.fetchone()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Invalid progressID or documentID")
+
+        # Check if staffID matches progressID and documentID
+        staff_check_query = """SELECT staffID 
+                            FROM absenceProgress 
+                            WHERE progressID = %s AND documentID = %s AND staffID = %s"""
+        cursor.execute(staff_check_query, (detail.progressID, detail.documentID, detail.staffID))
+        staff_match = cursor.fetchone()
+
+        if not staff_match:
+            raise HTTPException(status_code=403, detail="Staff does not have the authority to approve this document")
+
+        # Approve form
+        update_approve_query = """UPDATE absenceProgress
+                               SET status = %s
+                               WHERE progressID = %s AND staffID = %s AND documentID = %s"""
+        cursor.execute(update_approve_query, (
+            detail.status,
+            detail.progressID,
+            detail.staffID,
+            detail.documentID
+        ))
+
+        # If student has 2 advisor set another advisor status column to "Other advisor approve"
+        other_advisor_query = """SELECT absenceProgress.staffID, role.roleName 
+                              FROM absenceProgress
+                              JOIN role ON absenceProgress.staff_roleID = role.roleID
+                              WHERE absenceProgress.documentID = %s 
+                              AND NOT absenceProgress.staffID = %s
+                              AND role.roleName NOT IN ('Dean', 'Head of dept')
+                              AND  absenceProgress.status = 'Waiting for approve'"""
+        cursor.execute(other_advisor_query, (detail.documentID, detail.staffID))
+        staffID = cursor.fetchone()
+        if staffID:
+            update_other_approve_query = """UPDATE absenceProgress
+                                         SET status = %s
+                                         WHERE staffID = %s AND documentID = %s;"""
+            cursor.execute(update_other_approve_query, (
+                "Other advisor approve",
+                staffID[0],
+                detail.documentID
+            ))
+
+        # Send email to notify next staff
+        # next_staff_query = """SELECT absenceProgress.step, absenceProgress.studentID, staff.username, staff.email
+        #                    FROM staff
+        #                    JOIN absenceProgress ON staff.staffID = absenceProgress.staffID
+        #                    WHERE absenceProgress.documentID = %s
+        #                    AND absenceProgress.status = 'Waiting for approve'
+        #                    GROUP BY staff.staffID
+        #                    ORDER BY absenceProgress.step ASC
+        #                    LIMIT 1"""
+        # cursor.execute(next_staff_query, (detail.documentID, ))
+        # next_staff = cursor.fetchone()
+        # if next_staff:
+        #     subject = "New Document to sign."
+        #     body = (f"You have document to sign\n"
+        #             f"From student ID: {next_staff[1]}\n"
+        #             f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
+        #     email_payload = {
+        #         "primary_recipient": next_staff[2],
+        #         "alternate_recipient": next_staff[3],
+        #         "subject": subject,
+        #         "body": body
+        #     }
+        #     await email_notification(EmailSchema(**email_payload))
+
+        conn.commit()
+
+        return {"message": "Approve successfully"}
+
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        print(e)
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+async def reject_absence_document(detail: RejectDetail):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Check if progressID and documentID exist
+        check_query = """SELECT progressID, documentID 
+                      FROM absenceProgress 
+                      WHERE progressID = %s AND documentID = %s"""
+        cursor.execute(check_query, (detail.progressID, detail.documentID))
+        result = cursor.fetchone()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Invalid progressID or documentID")
+
+        # Check if staffID matches progressID and documentID
+        staff_check_query = """SELECT staffID 
+                            FROM absenceProgress 
+                            WHERE progressID = %s AND documentID = %s AND staffID = %s"""
+        cursor.execute(staff_check_query, (detail.progressID, detail.documentID, detail.staffID))
+        staff_match = cursor.fetchone()
+
+        if not staff_match:
+            raise HTTPException(status_code=403, detail="Staff does not have the authority to approve this document")
+
+        update_query = """UPDATE absenceProgress
+                       SET status = %s, comment = %s
+                       WHERE progressID = %s AND staffID = %s AND documentID = %s"""
+        cursor.execute(update_query, (
+            detail.status,
+            detail.comment,
+            detail.progressID,
+            detail.staffID,
+            detail.documentID
+        ))
+        conn.commit()
+        return {"message": "Reject successfully"}
+
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        print(f"Error: {e}")
 
     finally:
         cursor.close()

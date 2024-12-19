@@ -1,6 +1,12 @@
 from fastapi import HTTPException
 from pydantic import BaseModel
 import httpx
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 
 
 class LoginRequest(BaseModel):
@@ -10,10 +16,6 @@ class LoginRequest(BaseModel):
 
 AUTHORIZATION_URL = "https://login.sit.kmutt.ac.th/realms/student-project/protocol/openid-connect/auth"
 TOKEN_URL = "https://login.sit.kmutt.ac.th/realms/student-project/protocol/openid-connect/token"
-USERINFO_URL = "https://login.sit.kmutt.ac.th/realms/student-project/protocol/openid-connect/userinfo"
-END_SESSION_URL = "https://login.sit.kmutt.ac.th/realms/student-project/protocol/openid-connect/logout"
-CLIENT_ID = "auth-cp24un1"
-CLIENT_SECRET = "VxpOUOr3xGx5WzrpmEiUE1GRxPaHj2yl"
 REDIRECT_URI = "http://localhost/*"
 SCOPE = "openid profile email"
 
