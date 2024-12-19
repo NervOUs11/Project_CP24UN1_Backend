@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 from sendEmail import email_notification, EmailSchema
+from login_JWT import get_token
 
 app = FastAPI()
 ph = PasswordHasher()
@@ -28,21 +29,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-class StudentSignUp(BaseModel):
-    studentID: int
-    username: str
-    password: str
-    firstname: str
-    lastname: str
-    phone_number: str
-    alter_email: str
-    signature: bytes = b"dummySignature"
-    advisor1_fullname: str
-    advisor2_fullname: str
-    faculty: str
-    department: str
 
 
 class UserLogin(BaseModel):
@@ -109,112 +95,141 @@ async def log_in(user: UserLogin):
     cursor = conn.cursor()
 
     try:
-        username_query = """SELECT 'student' AS user_type, username 
-                         FROM student WHERE username = %s
-                         UNION ALL
-                         SELECT 'staff' AS user_type, username 
-                         FROM staff WHERE username = %s"""
-        cursor.execute(username_query, (user.username, user.username))
-        result = cursor.fetchone()
-        if result is None:
-            raise HTTPException(status_code=404, detail="User not found")
-        userRole = result[0]
+        # Login with my own database
+        # username_query = """SELECT 'student' AS user_type, username
+        #                  FROM student WHERE username = %s
+        #                  UNION ALL
+        #                  SELECT 'staff' AS user_type, username
+        #                  FROM staff WHERE username = %s"""
+        # cursor.execute(username_query, (user.username, user.username))
+        # result = cursor.fetchone()
+        # if result is None:
+        #     raise HTTPException(status_code=404, detail="User not found")
+        # userRole = result[0]
+        #
+        # try:
+        #     if userRole == 'student':
+        #         select_query = "SELECT password FROM student WHERE username = %s"
+        #     elif userRole == 'staff':
+        #         select_query = "SELECT password FROM staff WHERE username = %s"
+        #     else:
+        #         select_query = "SELECT password FROM student WHERE username = %s"
+        #         print("Not student or staff")
+        #     cursor.execute(select_query, (user.username,))
+        #     passwordResult = cursor.fetchone()
+        #     stored_password = passwordResult[0]
+        #     ph.verify(stored_password, user.password)
+        # except Exception:
+        #     raise HTTPException(status_code=401, detail="Invalid password")
+
+        # Login with JWT
+        try:
+            response = await get_token(user.username, user.password)
+
+        except Exception:
+            raise HTTPException(status_code=401, detail="Username or Password incorrect")
+
+        userRole = ""
+
+        if response.status_code == 200:
+            try:
+                username_query = """SELECT 'student' AS user_type, username 
+                                 FROM student WHERE username = %s
+                                 UNION ALL
+                                 SELECT 'staff' AS user_type, username 
+                                 FROM staff WHERE username = %s"""
+                cursor.execute(username_query, (user.username, user.username))
+                result = cursor.fetchone()
+                userRole = result[0]
+            except Exception as error:
+                print(error)
+        else:
+            raise HTTPException(status_code=401, detail="Username or Password incorrect")
 
         try:
-            if userRole == 'student':
-                select_query = "SELECT password FROM student WHERE username = %s"
-            elif userRole == 'staff':
-                select_query = "SELECT password FROM staff WHERE username = %s"
-            else:
-                select_query = "SELECT password FROM student WHERE username = %s"
-                print("Not student or staff")
-            cursor.execute(select_query, (user.username,))
-            passwordResult = cursor.fetchone()
-            stored_password = passwordResult[0]
-            ph.verify(stored_password, user.password)
-        except Exception:
-            raise HTTPException(status_code=401, detail="Invalid password")
+            if userRole == "student":
+                # get all user data
+                select_user = "SELECT * FROM student WHERE username = %s"
+                cursor.execute(select_user, (user.username,))
+                userResult = cursor.fetchone()
 
-        if userRole == "student":
-            # get all user data
-            select_user = "SELECT * FROM student WHERE username = %s"
-            cursor.execute(select_user, (user.username,))
-            userResult = cursor.fetchone()
+                # get department name
+                select_department = "SELECT departmentName FROM department WHERE departmentID = %s"
+                cursor.execute(select_department, (userResult[7],))
+                departmentName = cursor.fetchone()
 
-            # get department name
-            select_department = "SELECT departmentName FROM department WHERE departmentID = %s"
-            cursor.execute(select_department, (userResult[8],))
-            departmentName = cursor.fetchone()
+                # get faculty name
+                select_faculty = "SELECT facultyName FROM faculty WHERE facultyID = %s"
+                cursor.execute(select_faculty, (userResult[8],))
+                facultyName = cursor.fetchone()
 
-            # get faculty name
-            select_faculty = "SELECT facultyName FROM faculty WHERE facultyID = %s"
-            cursor.execute(select_faculty, (userResult[9],))
-            facultyName = cursor.fetchone()
+                # get advisor
+                select_advisor = """SELECT concat(staff.firstName, " ", staff.lastName)
+                                 FROM student_advisor 
+                                 JOIN staff ON staff.staffID = student_advisor.staffID
+                                 WHERE studentID = %s"""
+                cursor.execute(select_advisor, (userResult[0],))
+                advisorName = cursor.fetchall()
 
-            # get advisor
-            select_advisor = """SELECT concat(staff.firstName, " ", staff.lastName)
-                             FROM student_advisor 
-                             JOIN staff ON staff.staffID = student_advisor.staffID
-                             WHERE studentID = %s"""
-            cursor.execute(select_advisor, (userResult[0],))
-            advisorName = cursor.fetchall()
+                user_info = {
+                    "studentID": userResult[0],
+                    "username": userResult[1],
+                    "firstName": userResult[2],
+                    "lastName": userResult[3],
+                    "role": "Student",
+                    "tel": userResult[4],
+                    "email": userResult[5],
+                    "year": userResult[6],
+                    "departmentID": userResult[7],
+                    "department": departmentName[0],
+                    "facultyID": userResult[8],
+                    "faculty": facultyName[0],
+                    "currentGPA": userResult[9],
+                    "cumulativeGPA": userResult[10],
+                    "advisor": advisorName
+                }
+            else:  # staff
+                # get all user data
+                select_user = "SELECT * FROM staff WHERE username = %s"
+                cursor.execute(select_user, (user.username,))
+                userResult = cursor.fetchone()
+                # get role name
+                select_department = "SELECT roleName FROM role WHERE roleID = %s"
+                cursor.execute(select_department, (userResult[6],))
+                roleName = cursor.fetchone()
+                # get department name
+                select_department = "SELECT departmentName FROM department WHERE departmentID = %s"
+                cursor.execute(select_department, (userResult[7],))
+                departmentName = cursor.fetchone()
+                # get faculty name
+                select_faculty = "SELECT facultyName FROM faculty WHERE facultyID = %s"
+                cursor.execute(select_faculty, (userResult[8],))
+                facultyName = cursor.fetchone()
 
-            user_info = {
-                "studentID": userResult[0],
-                "username": userResult[1],
-                "firstName": userResult[3],
-                "lastName": userResult[4],
-                "role": "Student",
-                "tel": userResult[5],
-                "alterEmail": userResult[6],
-                "year": userResult[7],
-                "departmentID": userResult[8],
-                "department": departmentName[0],
-                "facultyID": userResult[9],
-                "faculty": facultyName[0],
-                "currentGPA": userResult[10],
-                "cumulativeGPA": userResult[11],
-                "advisor": advisorName
-            }
-        else:  # staff
-            # get all user data
-            select_user = "SELECT * FROM staff WHERE username = %s"
-            cursor.execute(select_user, (user.username,))
-            userResult = cursor.fetchone()
-            # get role name
-            select_department = "SELECT roleName FROM role WHERE roleID = %s"
-            cursor.execute(select_department, (userResult[7],))
-            roleName = cursor.fetchone()
-            # get department name
-            select_department = "SELECT departmentName FROM department WHERE departmentID = %s"
-            cursor.execute(select_department, (userResult[8],))
-            departmentName = cursor.fetchone()
-            # get faculty name
-            select_faculty = "SELECT facultyName FROM faculty WHERE facultyID = %s"
-            cursor.execute(select_faculty, (userResult[9],))
-            facultyName = cursor.fetchone()
+                user_info = {
+                    "staffID": userResult[0],
+                    "username": userResult[1],
+                    "firstName": userResult[2],
+                    "lastName": userResult[3],
+                    "tel": userResult[4],
+                    "email": userResult[5],
+                    "role": roleName[0],
+                    "departmentID": userResult[7],
+                    "department": departmentName[0],
+                    "facultyID": userResult[8],
+                    "faculty": facultyName[0],
+                }
+            return user_info
 
-            user_info = {
-                "staffID": userResult[0],
-                "username": userResult[1],
-                "firstName": userResult[3],
-                "lastName": userResult[4],
-                "tel": userResult[5],
-                "alterEmail": userResult[6],
-                "role": roleName[0],
-                "departmentID": userResult[8],
-                "department": departmentName[0],
-                "facultyID": userResult[9],
-                "faculty": facultyName[0],
-            }
-        return user_info
+        except Exception as e:
+            print(e)
 
     finally:
         cursor.close()
         conn.close()
 
 
-@app.post("/api/document/add")
+@app.post("/api/document/absence/add")
 async def create_document(form: FormCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -292,7 +307,7 @@ async def create_document(form: FormCreate):
             cursor.execute(insert_progress, (
                 step[step_count],
                 s[0],
-                s[7],
+                s[6],
                 document_id,
                 form.studentID,
                 "Waiting for approve",
@@ -332,8 +347,8 @@ async def create_document(form: FormCreate):
                 "subject": subject,
                 "body": body
             }
-            await email_notification(EmailSchema(**email_payload))
-            await email_notification(EmailSchema(**email_payload_2))
+            # await email_notification(EmailSchema(**email_payload))
+            # await email_notification(EmailSchema(**email_payload_2))
 
         return {"message": "Created successfully"}, 201
 

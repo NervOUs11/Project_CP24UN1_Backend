@@ -49,11 +49,10 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `kmutt_database`.`student` (
   `studentID` BIGINT NOT NULL,
   `username` VARCHAR(255) NOT NULL,
-  `password` VARCHAR(255) NOT NULL,
   `firstName` VARCHAR(50) NOT NULL,
   `lastName` VARCHAR(50) NOT NULL,
-  `tel` VARCHAR(10) NOT NULL,
-  `alterEmail` VARCHAR(50) NULL,
+  `tel` VARCHAR(10) NULL,
+  `email` VARCHAR(50) NULL,
   `year` INT NOT NULL,
   `departmentID` INT NOT NULL,
   `facultyID` INT NOT NULL,
@@ -86,11 +85,10 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `kmutt_database`.`staff` (
   `staffID` INT NOT NULL AUTO_INCREMENT,
   `username` VARCHAR(50) NOT NULL,
-  `password` VARCHAR(255) NOT NULL,
   `firstName` VARCHAR(50) NOT NULL,
   `lastName` VARCHAR(50) NOT NULL,
   `tel` VARCHAR(10) NULL,
-  `alterEmail` VARCHAR(50) NULL,
+  `email` VARCHAR(50) NULL,
   `roleID` INT NOT NULL,
   `departmentID` INT NOT NULL,
   `facultyID` INT NOT NULL,
@@ -140,7 +138,7 @@ ENGINE = InnoDB;
 -- Table `kmutt_database`.`progress`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `kmutt_database`.`progress` (
-  `progressID` INT NOT NULL AUTO_INCREMENT,
+  `progessID` INT NOT NULL AUTO_INCREMENT,
   `step` INT NOT NULL,
   `staffID` INT NOT NULL,
   `staff_roleID` INT NOT NULL,
@@ -150,7 +148,7 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`progress` (
   `comment` VARCHAR(400) NULL,
   `createDate` DATETIME NOT NULL,
   `editDate` DATETIME NOT NULL,
-  PRIMARY KEY (`progressID`, `staffID`, `staff_roleID`, `documentID`, `studentID`),
+  PRIMARY KEY (`progessID`, `staffID`, `staff_roleID`, `documentID`, `studentID`),
   INDEX `fk_documentActivityEventProgress_staff1_idx` (`staffID` ASC, `staff_roleID` ASC) VISIBLE,
   INDEX `fk_documentActivityEventProgress_documentActivityEvent1_idx` (`documentID` ASC, `studentID` ASC) VISIBLE,
   CONSTRAINT `fk_documentActivityEventProgress_staff1`
