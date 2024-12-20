@@ -129,18 +129,18 @@ async def create_absence_document(form: AbsenceFormCreate):
                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
 
         step_count = 0
-        main_email_2 = None
-        alter_email_2 = None
+        # main_email_2 = None
+        # alter_email_2 = None
         if len(all_staff_details) == 4:  # student has 2 advisor
             step = [1, 1, 2, 3]
-            main_email_1 = all_staff_details[0][1]  # first advisor main email
-            alter_email_1 = all_staff_details[0][6]  # first advisor alter email
-            main_email_2 = all_staff_details[1][1]  # second advisor main email
-            alter_email_2 = all_staff_details[1][6]  # second advisor alter email
+            # main_email_1 = all_staff_details[0][1]  # first advisor main email
+            # alter_email_1 = all_staff_details[0][6]  # first advisor alter email
+            # main_email_2 = all_staff_details[1][1]  # second advisor main email
+            # alter_email_2 = all_staff_details[1][6]  # second advisor alter email
         else:
             step = [1, 2, 3]  # student has 1 advisor
-            main_email_1 = all_staff_details[0][1]  # first advisor main email
-            alter_email_1 = all_staff_details[0][6]  # first advisor alter email
+            # main_email_1 = all_staff_details[0][1]  # first advisor main email
+            # alter_email_1 = all_staff_details[0][6]  # first advisor alter email
         for s in all_staff_details:
             cursor.execute(insert_progress, (
                 step[step_count],
@@ -156,37 +156,37 @@ async def create_absence_document(form: AbsenceFormCreate):
 
         conn.commit()
 
-        # Send email notification
-        subject = "New Document to sign."
-        body = (f"You have document to sign\n"
-                f"From student ID: {form.studentID}\n"
-                f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
-
-        # If student has 1 advisor (main_email_2 and alter_email_2 is None)
-        if main_email_2 is None and alter_email_2 is None:
-            email_payload = {
-                "primary_recipient": main_email_1,
-                "alternate_recipient": alter_email_1,
-                "subject": subject,
-                "body": body
-            }
-            await email_notification(EmailSchema(**email_payload))
-        # If student has 2 advisor
-        else:
-            email_payload = {
-                "primary_recipient": main_email_1,
-                "alternate_recipient": alter_email_1,
-                "subject": subject,
-                "body": body
-            }
-            email_payload_2 = {
-                "primary_recipient": main_email_2,
-                "alternate_recipient": alter_email_2,
-                "subject": subject,
-                "body": body
-            }
-            # await email_notification(EmailSchema(**email_payload))
-            # await email_notification(EmailSchema(**email_payload_2))
+        # # Send email notification
+        # subject = "New Document to sign."
+        # body = (f"You have document to sign\n"
+        #         f"From student ID: {form.studentID}\n"
+        #         f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
+        #
+        # # If student has 1 advisor (main_email_2 and alter_email_2 is None)
+        # if main_email_2 is None and alter_email_2 is None:
+        #     email_payload = {
+        #         "primary_recipient": main_email_1,
+        #         "alternate_recipient": alter_email_1,
+        #         "subject": subject,
+        #         "body": body
+        #     }
+        #     await email_notification(EmailSchema(**email_payload))
+        # # If student has 2 advisor
+        # else:
+        #     email_payload = {
+        #         "primary_recipient": main_email_1,
+        #         "alternate_recipient": alter_email_1,
+        #         "subject": subject,
+        #         "body": body
+        #     }
+        #     email_payload_2 = {
+        #         "primary_recipient": main_email_2,
+        #         "alternate_recipient": alter_email_2,
+        #         "subject": subject,
+        #         "body": body
+        #     }
+        #     await email_notification(EmailSchema(**email_payload))
+        #     await email_notification(EmailSchema(**email_payload_2))
 
         return {"message": "Created successfully"}, 201
 
