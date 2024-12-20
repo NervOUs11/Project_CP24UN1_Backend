@@ -39,21 +39,6 @@ class UserLogin(BaseModel):
     password: str
 
 
-# class ApproveDetail(BaseModel):
-#     progressID: int
-#     staffID: int
-#     documentID: int
-#     status: str = "Approve"
-#
-#
-# class RejectDetail(BaseModel):
-#     progressID: int
-#     staffID: int
-#     documentID: int
-#     status: str = "Reject"
-#     comment: str
-
-
 def get_db_connection():
     try:
         connection = mysql.connector.connect(
@@ -209,6 +194,35 @@ async def log_in(user: UserLogin):
         conn.close()
 
 
+@app.get("/api/staff/all")
+async def get_all_staff():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""SELECT staff.staffID, staff.username, concat(staff.firstName, " ", staff.lastName),
+                       staff.tel, staff.email, role.roleName, faculty.facultyName, department.departmentName
+                       FROM staff 
+                       JOIN role ON staff.roleID = role.roleID
+                       JOIN faculty ON staff.facultyID = faculty.facultyID
+                       JOIN department ON staff.departmentID = department.departmentID""")
+        staff = cursor.fetchall()
+
+        result = [{"staffID": record[0], "username": record[1],
+                   "name": record[2], "tel": record[3],
+                   "email": record[4], "role": record[5],
+                   "faculty": record[6], "department": record[7]} for record in staff]
+
+        return result
+
+    except HTTPException as e:
+        raise e
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
 @app.get("/api/document/all/{id}")
 async def get_all_document(id: str):
     conn = get_db_connection()
@@ -293,7 +307,7 @@ async def get_all_document(id: str):
             return all_doc
         else:
             # Changed progress to activityProgress and absenceProgress
-            query_activity_progress = """SELECT activityProgress.*
+            query_activity_progress = """SELECT activityProgress.*, activityDocument.type
                                          FROM activityProgress
                                          JOIN activityDocument ON activityProgress.documentID = activityDocument.documentID
                                          WHERE activityProgress.staffID = %s
@@ -313,7 +327,7 @@ async def get_all_document(id: str):
             cursor.execute(query_activity_progress, (id,))
             activity_progress_result = cursor.fetchall()
 
-            query_absence_progress = """SELECT absenceProgress.*
+            query_absence_progress = """SELECT absenceProgress.*, absenceDocument.type
                                         FROM absenceProgress
                                         JOIN absenceDocument ON absenceProgress.documentID = absenceDocument.documentID
                                         WHERE absenceProgress.staffID = %s
@@ -332,11 +346,14 @@ async def get_all_document(id: str):
                                          )"""
             cursor.execute(query_absence_progress, (id,))
             absence_progress_result = cursor.fetchall()
+            print(absence_progress_result)
 
             for r in activity_progress_result + absence_progress_result:
+                print(r)
                 document_info = {
                     "progessID": r[0],
                     "documentID": r[4],
+                    "documentType": r[11],
                     "studentID": r[5],
                     "status": r[6],
                     "comment": r[7],
