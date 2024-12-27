@@ -9,9 +9,14 @@ from datetime import datetime
 from typing import Optional
 from sendEmail import email_notification, EmailSchema
 from login_JWT import get_token
+from adminService import (get_all_user, get_all_role, get_all_club, edit_user_role, edit_user_club,
+                          UpdateUserRole, UpdateUserClub)
 from absenceDocument import (create_absence_document, delete_absence_document, update_absence_document,
                              approve_absence_document, reject_absence_document, detail_absence_document,
                              AbsenceFormCreate, AbsenceFormUpdate, ApproveDetail, RejectDetail)
+from activityDocument import (create_activity_document, delete_activity_document, update_activity_document,
+                             approve_activity_document, reject_activity_document, detail_activity_document,
+                             ActivityFormCreate, ActivityFormUpdate, ApproveDetail, RejectDetail)
 
 app = FastAPI()
 ph = PasswordHasher()
@@ -194,33 +199,49 @@ async def log_in(user: UserLogin):
         conn.close()
 
 
-@app.get("/api/staff/all")
-async def get_all_staff():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
+@app.get("/api/admin/allUser")
+async def admin_get_all_user():
     try:
-        cursor.execute("""SELECT staff.staffID, staff.username, concat(staff.firstName, " ", staff.lastName),
-                       staff.tel, staff.email, role.roleName, faculty.facultyName, department.departmentName
-                       FROM staff 
-                       JOIN role ON staff.roleID = role.roleID
-                       JOIN faculty ON staff.facultyID = faculty.facultyID
-                       JOIN department ON staff.departmentID = department.departmentID""")
-        staff = cursor.fetchall()
-
-        result = [{"staffID": record[0], "username": record[1],
-                   "name": record[2], "tel": record[3],
-                   "email": record[4], "role": record[5],
-                   "faculty": record[6], "department": record[7]} for record in staff]
-
+        result = await get_all_user()
         return result
-
     except HTTPException as e:
         raise e
 
-    finally:
-        cursor.close()
-        conn.close()
+
+@app.get("/api/admin/allRole")
+async def admin_get_all_role():
+    try:
+        result = await get_all_role()
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/admin/allClub")
+async def admin_get_all_club():
+    try:
+        result = await get_all_club()
+        return result
+    except HTTPException as e:
+        raise e
+
+
+# @app.put("/api/admin/editUserRole/{user_id}")
+# async def admin_edit_user_role(user_id: int, role: UpdateUserRole):
+#     try:
+#         result = await edit_user_role(user_id, role)
+#         return result
+#     except HTTPException as e:
+#         raise e
+
+
+# @app.put("/api/admin/editUserClub/{user_id}")
+# async def admin_edit_user_club(user_id: int, club: UpdateUserClub):
+#     try:
+#         result = await edit_user_club(user_id, club)
+#         return result
+#     except HTTPException as e:
+#         raise e
 
 
 @app.get("/api/document/all/{id}")
@@ -346,10 +367,8 @@ async def get_all_document(id: str):
                                          )"""
             cursor.execute(query_absence_progress, (id,))
             absence_progress_result = cursor.fetchall()
-            print(absence_progress_result)
 
             for r in activity_progress_result + absence_progress_result:
-                print(r)
                 document_info = {
                     "progessID": r[0],
                     "documentID": r[4],
@@ -374,19 +393,19 @@ async def get_all_document(id: str):
         conn.close()
 
 
-@app.get("/api/userID/{id}/document/absence/detail/{documentID}")
-async def get_absence_document_detail(documentID: str, id: str):
+@app.post("/api/document/absence/add")
+async def create_absence_doc(form: AbsenceFormCreate):
     try:
-        result = await detail_absence_document(documentID, id)
+        result = await create_absence_document(form)
         return result
     except HTTPException as e:
         raise e
 
 
-@app.post("/api/document/absence/add")
-async def create_absence_doc(form: AbsenceFormCreate):
+@app.get("/api/userID/{id}/document/absence/detail/{documentID}")
+async def get_absence_document_detail(documentID: str, id: str):
     try:
-        result = await create_absence_document(form)
+        result = await detail_absence_document(documentID, id)
         return result
     except HTTPException as e:
         raise e
@@ -423,6 +442,60 @@ async def approve_absence_doc(form: ApproveDetail):
 async def reject_absence_doc(form: RejectDetail):
     try:
         result = await reject_absence_document(form)
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.post("/api/document/activity/add")
+async def create_absence_doc(form: ActivityFormCreate):
+    try:
+        result = await create_activity_document(form)
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/userID/{id}/document/activity/detail/{documentID}")
+async def get_activity_document_detail(documentID: str, id: str):
+    try:
+        result = await detail_activity_document(documentID, id)
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.delete("/api/userID/{id}/document/activity/delete/{documentID}")
+async def delete_activity_doc(documentID: str, id: str):
+    try:
+        result = await delete_activity_document(documentID, id)
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.put("/api/userID/{id}/document/activity/edit/{documentID}")
+async def delete_activity_doc(documentID: str, id: str, form: ActivityFormUpdate):
+    try:
+        result = await update_activity_document(documentID, id, form)
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.put("/api/document/activity/approve")
+async def approve_activity_doc(form: ApproveDetail):
+    try:
+        result = await approve_activity_document(form)
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.put("/api/document/activity/reject")
+async def reject_activity_doc(form: RejectDetail):
+    try:
+        result = await reject_activity_document(form)
         return result
     except HTTPException as e:
         raise e

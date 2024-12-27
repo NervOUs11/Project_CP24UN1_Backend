@@ -20,7 +20,27 @@ INSERT INTO `kmutt_database`.`role` (`roleName`) VALUES
 ('Administrator'),
 ('Advisor'),
 ('Head of dept'),
-('Dean');
+('Dean'),                                                 -- คณบดี
+("Club's advisor"),                                       -- ที่ปรึกษาชมรม
+("Prime Minister"),                                       -- นายก
+('Deputy Dean'),                                          -- รองคณบดี
+('ประธานฝ่ายบำเพ็ญประโยชน์'),
+('ประธานฝ่ายวิชาการ'),
+('ประธานฝ่ายศิลปะและวัฒนธรรม'),
+('ประธานฝ่ายกีฬา'),
+('นายกองค์การนักศึกษา'),
+('Vice President of the Student Council'),                -- รองประธานสภานักศึกษา
+('President of Student Council'),                         -- ประธานสภานักศึกษา
+('Educational Service Provider'),                         -- นักบริการการศึกษา
+('Director of Student Affairs Office'),                   -- ผู้อำนวยการสำนักงานกิจการนักศึกษา
+('Vice President for Student and Learning Development');  -- รองอธิการบดีฝ่ายพัฒนานักศึกษาและผู้เรียนรู้
+
+-- Insert data into `club` table
+INSERT INTO `kmutt_database`.`club` (`clubName`) VALUES
+('อาสาพัฒนาชนบท'),
+('ติว'),
+('พุทธศาสตร์'),
+('ฟุตบอล');
 
 -- Insert data into `staff` table
 INSERT INTO `kmutt_database`.`staff` (`username`, `firstName`, `lastName`, `tel`, `email`, `roleID`, `departmentID`, `facultyID`) VALUES
@@ -44,3 +64,72 @@ INSERT INTO `kmutt_database`.`student_advisor` (`staffID`, `studentID`) VALUES
 (2, 64130500045),
 (3, 64130500045),
 (4, 64130500051);
+
+-- Insert data into `participant ` table
+INSERT INTO `kmutt_database`.`participant` (`participantName`) VALUES
+("Student"),
+("Teacher"),
+("Staff"),
+("Other");
+
+-- Insert data into `studentQF ` table
+INSERT INTO `kmutt_database`.`studentQF` (`name`) VALUES
+("Knowledge"),
+("Professional Skill"),
+("Thinking Skill"),
+("Learning Skill"),
+("Communication Skill"),
+("Management Skill"),
+("Leadership"),
+("KMUTT’s citizenship");
+
+-- Insert data into `entrepreneurial ` table
+INSERT INTO `kmutt_database`.`entrepreneurial` (`entrepreneurialName`) VALUES
+("Entrepreneurial Mindset"),
+("Knowledge Sharing Society"),
+("Research and Innovation Impact"),
+("Financial Literacy");
+
+-- Insert data into `evaluation ` table
+INSERT INTO `kmutt_database`.`evaluation` (`evaluationName`) VALUES
+("Observation"),
+("Interview"),
+("Questionnaires"),
+("Test"),
+("Other");
+
+-- Insert data into `activity ` table
+INSERT INTO `kmutt_database`.`activity` (`activityName`) VALUES
+("ด้านพัฒนาทักษะทางวิชาการและวิชาชีพ"),
+("ด้านกีฬาและการส่งเสริมสุขภาพ"),
+("ด้านกิจกรรมจิตอาสาและบำเพ็ญประโยชน์"),
+("ด้านทำนุบำรุงศิลปะแลวัฒนธรรม"),
+("ด้านการพัฒนาคุณลักษณะ"),
+("ด้านความภูมิใจและความผูกพันมหาวิทยาลัย");
+
+-- Insert data into `sustainability ` table
+INSERT INTO `kmutt_database`.`sustainability` (`sustainabilityName`) VALUES
+("SDGs Culture"),
+("Sustainability Change Agents"),
+("Green University and Smart Campus"),
+("Carbon Neutrality ");
+
+-- Insert data into `goal` table
+INSERT INTO `kmutt_database`.`goal` (`goalName`) VALUES
+("No Poverty"),
+("Zero Hunger"),
+("Good Health and Well-Being"),
+("Quality Education"),
+("Gender Equality"),
+("Clean Water and Sanitation"),
+("Affordable and Clean Energy"),
+("Decent Work and Economic Growth"),
+("Industry, Innovation, and Infrastructure"),
+("Reduced Inequalities"),
+("Sustainable Cities and Communities"),
+("Responsible Consumption and Production"),
+("Climate Action"),
+("Life Below Water"),
+("Life on Land"),
+("Peace, Justice and Strong Institutions"),
+("Partnerships");
