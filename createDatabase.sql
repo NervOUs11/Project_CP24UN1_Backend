@@ -75,10 +75,10 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`staff` (
   `tel` VARCHAR(10) NULL,
   `email` VARCHAR(50) NULL,
   `roleID` INT NOT NULL,
-  `departmentID` INT NOT NULL,
-  `facultyID` INT NOT NULL,
+  `departmentID` INT NULL,
+  `facultyID` INT NULL,
   `clubID` INT NULL,
-  PRIMARY KEY (`staffID`, `roleID`, `departmentID`, `facultyID`),
+  PRIMARY KEY (`staffID`, `roleID`),
   UNIQUE INDEX `username_UNIQUE` (`username` ASC) VISIBLE,
   INDEX `fk_staff_role1_idx` (`roleID` ASC) VISIBLE,
   INDEX `fk_staff_department2_idx` (`departmentID` ASC, `facultyID` ASC) VISIBLE,
@@ -162,7 +162,7 @@ ENGINE = InnoDB;
 -- Table `kmutt_database`.`activityDocument`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `kmutt_database`.`activityDocument` (
-  `documentID` INT NOT NULL,
+  `documentID` INT NOT NULL AUTO_INCREMENT,
   `studentID` BIGINT NOT NULL,
   `type` VARCHAR(45) NOT NULL,
   `startTime` DATETIME NOT NULL,
@@ -490,7 +490,6 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`result` (
   `kpi` VARCHAR(2000) NOT NULL,
   `detail` VARCHAR(2000) NOT NULL,
   `target` VARCHAR(2000) NOT NULL,
-  PRIMARY KEY (`documentID`),
   INDEX `fk_activityDocument_has_KPI_activityDocument1_idx` (`documentID` ASC) VISIBLE,
   CONSTRAINT `fk_activityDocument_has_KPI_activityDocument1`
     FOREIGN KEY (`documentID`)
@@ -507,7 +506,6 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`problem` (
   `documentID` INT NOT NULL,
   `problemDetail` VARCHAR(2000) NOT NULL,
   `solution` VARCHAR(2000) NOT NULL,
-  PRIMARY KEY (`documentID`),
   CONSTRAINT `fk_problem_activityDocument1`
     FOREIGN KEY (`documentID`)
     REFERENCES `kmutt_database`.`activityDocument` (`documentID`)
@@ -533,7 +531,6 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`document_sustainability` (
   `documentID` INT NOT NULL,
   `sustainabilityID` INT NOT NULL,
   `goalID` INT NULL,
-  PRIMARY KEY (`documentID`, `sustainabilityID`),
   INDEX `fk_table1_sustainability1_idx` (`sustainabilityID` ASC) VISIBLE,
   INDEX `fk_table1_goal1_idx` (`goalID` ASC) VISIBLE,
   CONSTRAINT `fk_table1_activityDocument1`
