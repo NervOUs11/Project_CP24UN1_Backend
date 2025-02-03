@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`activityDocument` (
   `editDate` DATETIME NOT NULL,
   `code` VARCHAR(50) NOT NULL,
   `departmentName` VARCHAR(50) NOT NULL,
-  `name` VARCHAR(50) NOT NULL,
+  `title` VARCHAR(50) NOT NULL,
   `location` VARCHAR(100) NOT NULL,
   `propose` VARCHAR(2000) NOT NULL,
   `payment` FLOAT NOT NULL,
@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`activityDocument` (
   `prepareEnd` DATETIME NOT NULL,
   `prepareFile` LONGBLOB NOT NULL,
   `evaluationFile` LONGBLOB NOT NULL,
-  `budgetDetails` LONGBLOB NOT NULL,
+  `budgetDetail` LONGBLOB NOT NULL,
   `scheduleDetail` LONGBLOB NOT NULL,
   PRIMARY KEY (`documentID`, `studentID`, `staffID`),
   INDEX `fk_activityDocument_student1_idx` (`studentID` ASC) VISIBLE,
@@ -297,9 +297,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `kmutt_database`.`student_commitee`
+-- Table `kmutt_database`.`student_committee`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `kmutt_database`.`student_commitee` (
+CREATE TABLE IF NOT EXISTS `kmutt_database`.`student_committee` (
   `studentID` BIGINT NOT NULL,
   `documentID` INT NOT NULL,
   `position` VARCHAR(45) NOT NULL,
@@ -487,7 +487,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `kmutt_database`.`result` (
   `documentID` INT NOT NULL,
-  `kpiID` VARCHAR(2000) NOT NULL,
+  `kpi` VARCHAR(2000) NOT NULL,
   `detail` VARCHAR(2000) NOT NULL,
   `target` VARCHAR(2000) NOT NULL,
   PRIMARY KEY (`documentID`),

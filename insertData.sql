@@ -28,7 +28,7 @@ INSERT INTO `kmutt_database`.`role` (`roleName`) VALUES
 ('ประธานฝ่ายวิชาการ'),
 ('ประธานฝ่ายศิลปะและวัฒนธรรม'),
 ('ประธานฝ่ายกีฬา'),
-('นายกองค์การนักศึกษา'),
+('President of the Student Organization'),                -- นายกองค์การนักศึกษา
 ('Vice President of the Student Council'),                -- รองประธานสภานักศึกษา
 ('President of Student Council'),                         -- ประธานสภานักศึกษา
 ('Educational Service Provider'),                         -- นักบริการการศึกษา
@@ -43,15 +43,28 @@ INSERT INTO `kmutt_database`.`club` (`clubName`) VALUES
 ('ฟุตบอล');
 
 -- Insert data into `staff` table
-INSERT INTO `kmutt_database`.`staff` (`username`, `firstName`, `lastName`, `tel`, `email`, `roleID`, `departmentID`, `facultyID`) VALUES
-('stf01', 'John', 'Doe', '0912345678', 'jonathan.deoe@gmail.com', 1, 1, 1),
-('lec01', 'Jane', 'Smith', '0912345679', 'jensen.smithx@gmail.com', 2, 5, 4),
-('lec02', 'Bob', 'Johnson', '0912345680', 'bobbybron.johnson@gmail.com', 2, 5, 4),
-('lec03', 'Tom', 'Lee', '0912345111', 'tommory.lee@gmail.com', 2, 3, 2),
-('lec04', 'Alice', 'A.', '0912345111', 'domchowhurnroman@gmail.com', 3, 5, 4),
-('lec05', 'Ben', 'B.', '0912345111', 'domchowhurnromanII@gmail.com', 4, 5, 4),
-('lec06', 'George', 'S.', '0912345111', 'domchowhurnromanIII@gmail.com', 3, 3, 2),
-('lec07', 'Tim', 'S.', '0912345111', 'kitokidandkwa@gmail.com', 4, 3, 2);
+INSERT INTO `kmutt_database`.`staff` (`username`, `firstName`, `lastName`, `tel`, `email`, `roleID`, `departmentID`, `facultyID`, `clubID`) VALUES
+('stf01', 'John', 'Doe', '0912345678', 'jonathan.deoe@gmail.com', 1, 1, 1, null),
+('lec01', 'Jane', 'Smith', '0912345679', 'jensen.smithx@gmail.com', 2, 5, 4, null),
+('lec02', 'Bob', 'Johnson', '0912345680', 'bobbybron.johnson@gmail.com', 2, 5, 4, null),
+('lec03', 'Tom', 'Lee', '0912345111', 'tommory.lee@gmail.com', 2, 3, 2, null),
+('lec04', 'Alice', 'A.', '0912345111', 'domchowhurnroman@gmail.com', 3, 5, 4, null),
+('lec05', 'Ben', 'B.', '0912345111', 'domchowhurnromanII@gmail.com', 4, 5, 4, null),
+('lec06', 'George', 'S.', '0912345111', 'domchowhurnromanIII@gmail.com', 3, 3, 2, null),
+('lec07', 'Tim', 'S.', '0912345111', 'kitokidandkwa@gmail.com', 4, 3, 2, null),
+('stf02', 'Emily', 'Johnson', '0912345678', 'emily.johnson@gmail.com', 5, null, null, null),
+('stf03', 'Michael', 'Brown', '0912345678', 'michael.brown@gmail.com', 6, null, null, null),
+('stf04', 'Sarah', 'Davis', '0912345678', 'sarah.davis@gmail.com', 7, null, null, null),
+('stf05', 'David', 'Wilson', '0912345678', 'david.wilson@gmail.com', 8, null, null, null),
+('stf06', 'Jessica', 'Martinez', '0912345678', 'jessica.martinez@gmail.com', 9, null, null, null),
+('stf07', 'Daniel', 'Anderson', '0912345678', 'daniel.anderson@gmail.com', 10, null, null, null),
+('stf08', 'Laura', 'Thomas', '0912345678', 'laura.thomas@gmail.com', 11, null, null, null),
+('stf09', 'Matthew', 'Taylor', '0912345678', 'matthew.taylor@gmail.com', 12, null, null, null),
+('stf10', 'Olivia', 'Harris', '0912345678', 'olivia.harris@gmail.com', 13, null, null, null),
+('stf11', 'Christopher', 'Martin', '0912345678', 'christopher.martin@gmail.com', 14, null, null, null),
+('stf12', 'Andrew', 'Thompson', '0912345678', 'andrew.thompson@gmail.com', 15, null, null, null),
+('stf13', 'Nancy', 'Garcia', '0912345678', 'nancy.garcia@gmail.com', 16, null, null, null),
+('stf14', 'Joshua', 'Martinez', '0912345678', 'joshua.martinez@gmail.com', 17, null, null, null);
 
 -- Insert data into `student` table
 INSERT INTO `kmutt_database`.`student` (`studentID`, `username`, `firstName`, `lastName`, `tel`, `email`,

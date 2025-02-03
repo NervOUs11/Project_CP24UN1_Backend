@@ -1,12 +1,11 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Tuple
 import mysql.connector
 from fastapi import HTTPException
 from dotenv import load_dotenv
 import os
 from sendEmail import email_notification, EmailSchema
-
 
 load_dotenv()
 host = os.getenv("DB_HOSTNAME")
@@ -17,15 +16,37 @@ database = os.getenv("DB_DATABASE")
 
 class ActivityFormCreate(BaseModel):
     studentID: int
-    studentFacultyID: int
-    studentDepartmentID: int
     type: str
     startTime: datetime
     endTime: datetime
-    detail: str
-    attachmentFile1: Optional[bytes] = None
-    attachmentFile2: Optional[bytes] = None
-    attachmentFile2Name: Optional[str] = None
+    code: str
+    departmentName: str
+    title: str
+    location: str
+    propose: str
+    payment: str
+    staffID: int
+    sustainabilityDetail: str
+    sustainabilityPropose: str
+    activityCharacteristic: str
+    codeOfHonor: str
+    prepareStart: datetime
+    prepareEnd: datetime
+    prepareFile: Optional[bytes] = "None"
+    evaluationFile: Optional[bytes] = "None"
+    budgetDetails: Optional[bytes] = "None"
+    scheduleDetails: Optional[bytes] = "None"
+    participant: List[Tuple[int, int]] = []                  # [(participantID, count)]
+    activity: List[Tuple[int, int]] = []                     # [(activityID, countHour)]
+    problem: List[Tuple[str, str]] = []                      # [(problemDetail, solution)]
+    studentQF: List[int] = []                                # [studentQF_ID]
+    entrepreneurial: List[int] = []                          # [entrepreneurialID]
+    evaluation: List[Tuple[int, Optional[str]]] = []         # [(evaluationID, otherEvaluationName)]
+    result: List[Tuple[str, str, str]] = []                  # [(kpi, detail, target)]
+    sustainability: List[Tuple[int, Optional[int]]] = []     # [sustainabilityID, goalID]
+    committee: List[Tuple[int, str]] = []                    # [studentID, position]
+    staffIDProgress2: int                                    # นายก/ประธานชมรม
+    staffIDProgress3: int                                    # ประธานฝ่าย
 
 
 class ActivityFormUpdate(BaseModel):
@@ -68,6 +89,171 @@ def get_db_connection():
         raise HTTPException(status_code=500, detail="Database connection failed")
 
 
+async def get_participant():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query_all_participant = """SELECT * FROM participant"""
+        cursor.execute(query_all_participant)
+        all_participant = cursor.fetchall()
+        participant_result = [{"participantID": record[0],
+                               "participantName": record[1]}
+                              for record in all_participant]
+        return participant_result
+
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+async def get_studentQF():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query_all_studentQF = """SELECT * FROM studentQF"""
+        cursor.execute(query_all_studentQF)
+        all_studentQF = cursor.fetchall()
+        studentQF_result = [{"studentQF_ID": record[0],
+                             "studentQF_Name": record[1]}
+                            for record in all_studentQF]
+        return studentQF_result
+
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+async def get_entrepreneurial():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query_all_entrepreneurial = """SELECT * FROM entrepreneurial"""
+        cursor.execute(query_all_entrepreneurial)
+        all_entrepreneurial = cursor.fetchall()
+        entrepreneurial_result = [{"entrepreneurialID": record[0],
+                                   "entrepreneurialName": record[1]}
+                                  for record in all_entrepreneurial]
+        return entrepreneurial_result
+
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+async def get_evaluation():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query_all_entrepreneurial = """SELECT * FROM evaluation"""
+        cursor.execute(query_all_entrepreneurial)
+        all_evaluation = cursor.fetchall()
+        evaluation_result = [{"evaluationID": record[0],
+                              "evaluationName": record[1]}
+                             for record in all_evaluation]
+        return evaluation_result
+
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+async def get_activity():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query_all_activity = """SELECT * FROM activity"""
+        cursor.execute(query_all_activity)
+        all_activity = cursor.fetchall()
+        activity_result = [{"activityID": record[0],
+                            "activityName": record[1]}
+                           for record in all_activity]
+        return activity_result
+
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+async def get_sustainability():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query_all_sustainability = """SELECT * FROM sustainability"""
+        cursor.execute(query_all_sustainability)
+        all_sustainability = cursor.fetchall()
+        sustainability_result = [{"sustainabilityID": record[0],
+                                  "sustainabilityName": record[1]}
+                                 for record in all_sustainability]
+        return sustainability_result
+
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+async def get_goal():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query_all_goal = """SELECT * FROM goal"""
+        cursor.execute(query_all_goal)
+        all_goal = cursor.fetchall()
+        goal_result = [{"goalID": record[0],
+                        "goalName": record[1]}
+                       for record in all_goal]
+        return goal_result
+
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+async def get_staff():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query_all_staff = """SELECT * FROM staff"""
+        cursor.execute(query_all_staff)
+        all_staff = cursor.fetchall()
+        return all_staff
+
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
 async def create_activity_document(form: ActivityFormCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -75,118 +261,257 @@ async def create_activity_document(form: ActivityFormCreate):
     try:
         create_date = datetime.now()
         edit_date = create_date
-        insert_form = """INSERT INTO absenceDocument (studentID, type, startTime, endTime, detail, attachmentFile1,
-                      attachmentFile2, attachmentFile2Name, createDate, editDate)
-                      VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+        insert_form = """INSERT INTO activityDocument (studentID, type, startTime, endTime, createDate, editDate,
+                      code, departmentName, title, location, propose, payment, staffID, sustainabilityDetail,
+                      sustainabilityPropose, activityCharacteristic, codeOfHonor, prepareStart, prepareEnd,
+                      prepareFile, evaluationFile, budgetDetail, scheduleDetail)
+                      VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
         cursor.execute(insert_form, (
             form.studentID,
             form.type,
             form.startTime,
             form.endTime,
-            form.detail,
-            form.attachmentFile1,
-            form.attachmentFile2,
-            form.attachmentFile2Name,
             create_date,
-            edit_date
+            edit_date,
+            form.code,
+            form.departmentName,
+            form.title,
+            form.location,
+            form.propose,
+            form.payment,
+            form.staffID,
+            form.sustainabilityDetail,
+            form.sustainabilityPropose,
+            form.activityCharacteristic,
+            form.codeOfHonor,
+            form.prepareStart,
+            form.prepareEnd,
+            form.prepareFile,
+            form.evaluationFile,
+            form.budgetDetails,
+            form.scheduleDetails
         ))
         document_id = cursor.lastrowid
 
-        staffID_query = """select staffID from student_advisor where studentID = %s"""
-        cursor.execute(staffID_query, (
+        # check activityID in table activity and insert into document_activity table
+        for activity in form.activity:
+            check_activity_query = """SELECT * FROM activity WHERE activityID = %s"""
+            cursor.execute(check_activity_query, (activity[0],))
+            activity_result = cursor.fetchone()
+            if not activity_result:
+                raise HTTPException(status_code=404, detail="Activity not found")
+            insert_activity_query = """INSERT INTO document_activity (documentID, activityID, countHour)
+                                    VALUES (%s, %s, %s)"""
+            cursor.execute(insert_activity_query, (document_id, activity[0], activity[1]))
+
+        # check participantID in table participant and insert into document_participant table
+        for participant in form.participant:
+            check_participant_query = """SELECT * FROM participant WHERE participantID = %s"""
+            cursor.execute(check_participant_query, (participant[0],))
+            participant_result = cursor.fetchone()
+            if not participant_result:
+                raise HTTPException(status_code=404, detail="Participant not found")
+            insert_participant_query = """INSERT INTO document_participant (documentID, participantID, count)
+                                      VALUES (%s, %s, %s)"""
+            cursor.execute(insert_participant_query, (document_id, participant[0], participant[1]))
+
+        # insert problem into problem table
+        for problem in form.problem:
+            insert_problem_query = """INSERT INTO problem (documentID, problemDetail, solution)
+                                 VALUES (%s, %s, %s)"""
+            cursor.execute(insert_problem_query, (document_id, problem[0], problem[1]))
+
+        # check studentQF_ID in table studentQF and insert into document_studentQF table
+        for studentQF in form.studentQF:
+            check_studentQF_query = """SELECT * FROM studentQF WHERE student_QF_ID = %s"""
+            cursor.execute(check_studentQF_query, (studentQF,))
+            studentQF_result = cursor.fetchone()
+            if not studentQF_result:
+                raise HTTPException(status_code=404, detail="StudentQF not found")
+            insert_studentQF_query = """INSERT INTO document_studentQF (documentID, student_QF_ID)
+                                    VALUES (%s, %s)"""
+            cursor.execute(insert_studentQF_query, (document_id, studentQF))
+
+        # check entrepreneurialID in table entrepreneurial and insert into document_entrepreneurial table
+        for entrepreneurial in form.entrepreneurial:
+            check_entrepreneurial_query = """SELECT * FROM entrepreneurial WHERE entrepreneurialID = %s"""
+            cursor.execute(check_entrepreneurial_query, (entrepreneurial,))
+            entrepreneurial_result = cursor.fetchone()
+            if not entrepreneurial_result:
+                raise HTTPException(status_code=404, detail="Entrepreneurial not found")
+            insert_entrepreneurial_query = """INSERT INTO document_entrepreneurial (documentID, entrepreneurialID)
+                                         VALUES (%s, %s)"""
+            cursor.execute(insert_entrepreneurial_query, (document_id, entrepreneurial))
+
+        # check evaluationID in table evaluation and insert into document_evaluation table
+        for evaluation in form.evaluation:
+            check_evaluation_query = """SELECT * FROM evaluation WHERE evaluationID = %s"""
+            cursor.execute(check_evaluation_query, (evaluation[0],))
+            evaluation_result = cursor.fetchone()
+            if not evaluation_result:
+                raise HTTPException(status_code=404, detail="Evaluation not found")
+            insert_evaluation_query = """INSERT INTO document_evaluation (documentID, evaluationID, otherEvaluationName)
+                                     VALUES (%s, %s, %s)"""
+            cursor.execute(insert_evaluation_query, (document_id, evaluation[0], evaluation[1]))
+
+        # insert result into result table
+        for result in form.result:
+            insert_result_query = """INSERT INTO result (documentID, kpi, detail, target)
+                               VALUES (%s, %s, %s, %s)"""
+            cursor.execute(insert_result_query, (document_id, result[0], result[1], result[2]))
+
+        # check sustainabilityID in table sustainability and goalID in table goal
+        # then insert into document_sustainability table
+        for sustainability in form.sustainability:
+            check_sustainability_query = """SELECT * FROM sustainability WHERE sustainabilityID = %s"""
+            cursor.execute(check_sustainability_query, (sustainability[0],))
+            sustainability_result = cursor.fetchone()
+            if not sustainability_result:
+                raise HTTPException(status_code=404, detail="Sustainability not found")
+            if sustainability[1] is not None:
+                check_goal_query = """SELECT * FROM goal WHERE goalID = %s"""
+                cursor.execute(check_goal_query, (sustainability[1],))
+                goal_result = cursor.fetchone()
+                if not goal_result:
+                    raise HTTPException(status_code=404, detail="Goal not found")
+            insert_sustainability_query = """INSERT INTO document_sustainability (documentID, sustainabilityID, goalID)
+                                        VALUES (%s, %s, %s)"""
+            cursor.execute(insert_sustainability_query, (document_id, sustainability[0], sustainability[1]))
+
+        # check studentID in table student and insert into document_committee table
+        for committee in form.committee:
+            check_student_query = """SELECT * FROM student WHERE studentID = %s"""
+            cursor.execute(check_student_query, (committee[0],))
+            student_result = cursor.fetchone()
+            if not student_result:
+                raise HTTPException(status_code=404, detail="Student not found")
+            insert_committee_query = """INSERT INTO student_committee (documentID, studentID, position)
+                                 VALUES (%s, %s, %s)"""
+            cursor.execute(insert_committee_query, (document_id, committee[0], committee[1]))
+
+        # insert progress 1 into activityProgress table
+        role_query = """SELECT roleID FROM staff WHERE staffID = %s"""
+        cursor.execute(role_query, (form.staffID,))
+        roleID_result = cursor.fetchone()
+        if not roleID_result:
+            raise HTTPException(status_code=404, detail="Role not found")
+
+        insert_step_one_progress = """INSERT INTO activityProgress (step, staffID, staff_roleID, documentID,
+                                   studentID, status, createDate, editDate)
+                                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+        cursor.execute(insert_step_one_progress, (
+            1,
+            form.staffID,
+            roleID_result[0],
+            document_id,
             form.studentID,
+            "Waiting for approve",
+            create_date,
+            edit_date
         ))
-        staffID_results = cursor.fetchall()
 
-        if not staffID_results:
-            raise HTTPException(status_code=404, detail="No staffIDs found for the given studentID")
+        # insert progress 2 into activityProgress table
+        role_query = """SELECT roleID FROM staff WHERE staffID = %s"""
+        cursor.execute(role_query, (form.staffIDProgress2,))
+        roleID_result = cursor.fetchone()
+        if not roleID_result:
+            raise HTTPException(status_code=404, detail="Role not found")
 
-        all_staff_details = []
-        for (staffID,) in staffID_results:
-            staff_query = """SELECT * FROM staff 
-                          JOIN role ON staff.roleID = role.roleID 
-                          WHERE staffID = %s"""
-            cursor.execute(staff_query, (staffID,))
-            staff_details = cursor.fetchall()
+        insert_step_two_progress = """INSERT INTO activityProgress (step, staffID, staff_roleID, documentID,
+                                   studentID, status, createDate, editDate)
+                                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+        cursor.execute(insert_step_two_progress, (
+            2,
+            form.staffIDProgress2,
+            roleID_result[0],
+            document_id,
+            form.studentID,
+            "Waiting for approve",
+            create_date,
+            edit_date
+        ))
 
-            if staff_details:
-                all_staff_details.extend(staff_details)  # Add each staff's details to the list
+        # insert progress 3 into activityProgress table
+        role_query = """SELECT roleID FROM staff WHERE staffID = %s"""
+        cursor.execute(role_query, (form.staffIDProgress3,))
+        roleID_result = cursor.fetchone()
+        if not roleID_result:
+            raise HTTPException(status_code=404, detail="Role not found")
 
-        if not all_staff_details:
-            raise HTTPException(status_code=404, detail="No staff details found for the given staffIDs")
+        insert_step_three_progress = """INSERT INTO activityProgress (step, staffID, staff_roleID, documentID,
+                                     studentID, status, createDate, editDate)
+                                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+        cursor.execute(insert_step_three_progress, (
+            3,
+            form.staffIDProgress3,
+            roleID_result[0],
+            document_id,
+            form.studentID,
+            "Waiting for approve",
+            create_date,
+            edit_date
+        ))
 
-        signer_query = """SELECT * FROM staff 
-                       JOIN role ON staff.roleID = role.roleID 
-                       WHERE staff.facultyID = %s 
-                       AND (role.roleName = 'Head of dept' OR role.roleName = 'Dean')"""
-        cursor.execute(signer_query, (form.studentFacultyID,))
-        staff = cursor.fetchall()
-        if staff:
-            all_staff_details.extend(staff)
+        fixed_staff_query = """SELECT staff.username, staff.staffID, staff.roleID, role.roleName 
+                            FROM staff 
+                            JOIN role ON staff.roleID = role.roleID
+                            WHERE role.roleName = 'President of the Student Organization' 
+                            OR role.roleName = 'Vice President of the Student Council'
+                            OR role.roleName = 'President of Student Council'
+                            OR role.roleName = 'Educational Service Provider'
+                            OR role.roleName = 'Director of Student Affairs Office'
+                            OR role.roleName = 'Vice President for Student and Learning Development'"""
+        cursor.execute(fixed_staff_query)
+        fixed_staff = cursor.fetchall()
 
-        insert_progress = """INSERT INTO absenceProgress (step, staffID, staff_roleID, documentID,
-                          studentID, status, createDate, editDate)
-                          VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
-
-        step_count = 0
-        # main_email_2 = None
-        # alter_email_2 = None
-        if len(all_staff_details) == 4:  # student has 2 advisor
-            step = [1, 1, 2, 3]
-            # main_email_1 = all_staff_details[0][1]  # first advisor main email
-            # alter_email_1 = all_staff_details[0][6]  # first advisor alter email
-            # main_email_2 = all_staff_details[1][1]  # second advisor main email
-            # alter_email_2 = all_staff_details[1][6]  # second advisor alter email
-        else:
-            step = [1, 2, 3]  # student has 1 advisor
-            # main_email_1 = all_staff_details[0][1]  # first advisor main email
-            # alter_email_1 = all_staff_details[0][6]  # first advisor alter email
-        for s in all_staff_details:
+        for staff in fixed_staff:
+            step = 0
+            insert_progress = """INSERT INTO activityProgress (step, staffID, staff_roleID, documentID,
+                              studentID, status, createDate, editDate)
+                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+            if staff[3] == "President of the Student Organization":
+                step = 4
+            elif staff[3] == "Vice President of the Student Council":
+                step = 5
+            elif staff[3] == "President of Student Council":
+                step = 6
+            elif staff[3] == "Educational Service Provider":
+                step = 7
+            elif staff[3] == "Director of Student Affairs Office":
+                step = 8
+            elif staff[3] == "Vice President for Student and Learning Development":
+                step = 9
             cursor.execute(insert_progress, (
-                step[step_count],
-                s[0],
-                s[6],
+                step,
+                staff[1],
+                staff[2],
                 document_id,
                 form.studentID,
                 "Waiting for approve",
                 create_date,
                 edit_date
             ))
-            step_count += 1
 
         conn.commit()
 
         # # Send email notification
+        # staff_email_query = """SELECT staff.email FROM staff
+        #                             JOIN activityProgress ON staff.staffID = activityProgress.staffID
+        #                             WHERE activityProgress.documentID = %s AND activityProgress.step = 1"""
+        # cursor.execute(staff_email_query, (document_id,))
+        # staff_email = cursor.fetchone()
+        #
         # subject = "New Document to sign."
         # body = (f"You have document to sign\n"
-        #         f"From student ID: {form.studentID}\n"
         #         f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
-        #
-        # # If student has 1 advisor (main_email_2 and alter_email_2 is None)
-        # if main_email_2 is None and alter_email_2 is None:
-        #     email_payload = {
-        #         "primary_recipient": main_email_1,
-        #         "alternate_recipient": alter_email_1,
-        #         "subject": subject,
-        #         "body": body
-        #     }
-        #     await email_notification(EmailSchema(**email_payload))
-        # # If student has 2 advisor
-        # else:
-        #     email_payload = {
-        #         "primary_recipient": main_email_1,
-        #         "alternate_recipient": alter_email_1,
-        #         "subject": subject,
-        #         "body": body
-        #     }
-        #     email_payload_2 = {
-        #         "primary_recipient": main_email_2,
-        #         "alternate_recipient": alter_email_2,
-        #         "subject": subject,
-        #         "body": body
-        #     }
-        #     await email_notification(EmailSchema(**email_payload))
-        #     await email_notification(EmailSchema(**email_payload_2))
+        # email_payload = {
+        #     "primary_recipient": staff_email[0],
+        #     "alternate_recipient": None,
+        #     "subject": subject,
+        #     "body": body
+        # }
+        # await email_notification(EmailSchema(**email_payload))
 
         return {"message": "Created successfully"}, 201
 
@@ -205,7 +530,7 @@ async def delete_activity_document(documentID: str, id: str):
 
     try:
         document_check_query = """SELECT * 
-                               FROM absenceDocument 
+                               FROM activityDocument 
                                WHERE documentID = %s"""
         cursor.execute(document_check_query, (documentID,))
         document_match = cursor.fetchone()
@@ -213,19 +538,44 @@ async def delete_activity_document(documentID: str, id: str):
             raise HTTPException(status_code=404, detail="Document not found")
 
         user_check_query = """SELECT * 
-                           FROM absenceDocument 
+                           FROM activityDocument 
                            WHERE studentID = %s AND documentID = %s"""
         cursor.execute(user_check_query, (id, documentID))
         user_match = cursor.fetchone()
         if not user_match:
             raise HTTPException(status_code=403, detail="User do not have permission to delete")
 
-        delete_in_progress = """DELETE FROM absenceProgress
-                             WHERE studentID = %s AND documentID = %s"""
+        delete_activity = """DELETE FROM document_activity WHERE documentID = %s;"""
+        cursor.execute(delete_activity, (documentID,))
+
+        delete_participant = """DELETE FROM document_participant WHERE documentID = %s;"""
+        cursor.execute(delete_participant, (documentID,))
+
+        delete_problem = """DELETE FROM problem WHERE documentID = %s;"""
+        cursor.execute(delete_problem, (documentID,))
+
+        delete_studentQF = """DELETE FROM document_studentQF WHERE documentID = %s;"""
+        cursor.execute(delete_studentQF, (documentID,))
+
+        delete_entrepreneurial = """DELETE FROM document_entrepreneurial WHERE documentID = %s;"""
+        cursor.execute(delete_entrepreneurial, (documentID,))
+
+        delete_evaluation = """DELETE FROM document_evaluation WHERE documentID = %s;"""
+        cursor.execute(delete_evaluation, (documentID,))
+
+        delete_result = """DELETE FROM result WHERE documentID = %s;"""
+        cursor.execute(delete_result, (documentID,))
+
+        delete_sustainability = """DELETE FROM document_sustainability WHERE documentID = %s;"""
+        cursor.execute(delete_sustainability, (documentID,))
+
+        delete_committee = """DELETE FROM student_committee WHERE documentID = %s;"""
+        cursor.execute(delete_committee, (documentID,))
+
+        delete_in_progress = """DELETE FROM activityProgress WHERE studentID = %s AND documentID = %s"""
         cursor.execute(delete_in_progress, (id, documentID))
 
-        delete_in_form = """DELETE FROM absenceDocument
-                         WHERE studentID = %s AND documentID = %s"""
+        delete_in_form = """DELETE FROM activityDocument WHERE studentID = %s AND documentID = %s"""
         cursor.execute(delete_in_form, (id, documentID))
 
         conn.commit()
@@ -281,7 +631,7 @@ async def update_activity_document(documentID: str, id: str, form: ActivityFormU
             id
         ))
 
-        update_progress = """UPDATE absenceProgress
+        update_progress = """UPDATE activityProgress
                           SET status = %s, editDate = %s
                           WHERE documentID = %s and studentID = %s"""
         cursor.execute(update_progress, (
@@ -311,13 +661,120 @@ async def detail_activity_document(documentID: str, id: str):
     progress = []
 
     try:
-        query_form_detail = """SELECT * FROM absenceDocument
-                            WHERE documentID = %s"""
+        query_form_detail = """SELECT * FROM activityDocument WHERE documentID = %s"""
         cursor.execute(query_form_detail, (documentID,))
         detail_result = cursor.fetchone()
-
         if not detail_result:
             raise HTTPException(status_code=404, detail="Document not found")
+
+        query_participant = """SELECT participant.participantName, document_participant.count 
+                            FROM participant 
+                            JOIN document_participant 
+                            ON participant.participantID = document_participant.participantID
+                            WHERE document_participant.documentID = %s"""
+        cursor.execute(query_participant, (documentID,))
+        participant_result = cursor.fetchall()
+        participant_list = []
+        for p in participant_result:
+            participant = {
+                "participantName": p[0],
+                "count": p[1]
+            }
+            participant_list.append(participant)
+
+        query_document_activity = """SELECT activity.activityName, document_activity.countHour 
+                                  FROM activity 
+                                  JOIN document_activity 
+                                  ON activity.activityID = document_activity.activityID
+                                  WHERE document_activity.documentID = %s"""
+        cursor.execute(query_document_activity, (documentID,))
+        activity_result = cursor.fetchall()
+        activity_list = []
+        for a in activity_result:
+            activity = {
+                "activityName": a[0],
+                "countHour": a[1]
+            }
+            activity_list.append(activity)
+
+        query_problem = """SELECT problemDetail, solution FROM problem WHERE documentID = %s"""
+        cursor.execute(query_problem, (documentID,))
+        problem_result = cursor.fetchall()
+        problem_list = []
+        for p in problem_result:
+            problem = {
+                "problemDetail": p[0],
+                "solution": p[1]
+            }
+            problem_list.append(problem)
+
+        query_document_studentQF = """SELECT studentQF.name FROM studentQF JOIN document_studentQF
+                                   ON studentQF.student_QF_ID = document_studentQF.student_QF_ID 
+                                   WHERE document_studentQF.documentID = %s"""
+        cursor.execute(query_document_studentQF, (documentID,))
+        studentQF_result = cursor.fetchall()
+
+        query_document_entrepreneurial = """SELECT entrepreneurial.entrepreneurialName FROM entrepreneurial
+                                         JOIN document_entrepreneurial 
+                                         ON entrepreneurial.entrepreneurialID = document_entrepreneurial.entrepreneurialID
+                                            WHERE document_entrepreneurial.documentID = %s"""
+        cursor.execute(query_document_entrepreneurial, (documentID,))
+        entrepreneurial_result = cursor.fetchall()
+
+        query_document_evaluation = """SELECT evaluation.evaluationName, document_evaluation.otherEvaluationName
+                                    FROM evaluation JOIN document_evaluation 
+                                    ON evaluation.evaluationID = document_evaluation.evaluationID
+                                    WHERE document_evaluation.documentID = %s"""
+        cursor.execute(query_document_evaluation, (documentID,))
+        evaluation_result = cursor.fetchall()
+        evaluation_list = []
+        for e in evaluation_result:
+            evaluation = {
+                "evaluation": e[0],
+                "otherEvaluation": e[1]
+            }
+            evaluation_list.append(evaluation)
+
+        query_result = """SELECT kpi, detail, target FROM result WHERE documentID = %s"""
+        cursor.execute(query_result, (documentID,))
+        result_result = cursor.fetchall()
+        result_list = []
+        for r in result_result:
+            result = {
+                "kpi": r[0],
+                "detail": r[1],
+                "target": r[2]
+            }
+            result_list.append(result)
+
+        query_sustainability = """SELECT sustainability.sustainabilityName, goal.goalName 
+                               FROM document_sustainability 
+                               JOIN sustainability ON sustainability.sustainabilityID = document_sustainability.sustainabilityID
+                               LEFT JOIN goal ON document_sustainability.goalID = goal.goalID
+                               WHERE document_sustainability.documentID = %s"""
+        cursor.execute(query_sustainability, (documentID,))
+        sustainability_result = cursor.fetchall()
+        sustainability_list = []
+        for s in sustainability_result:
+            sustainability = {
+                "sustainability": s[0],
+                "goal": s[1]
+            }
+            sustainability_list.append(sustainability)
+
+        query_committee = """SELECT concat(student.firstName, " ", student.lastName), student_committee.position
+                          FROM student JOIN student_committee
+                          ON student.studentID = student_committee.studentID
+                          WHERE student_committee.documentID = %s"""
+        cursor.execute(query_committee, (documentID,))
+        committee_result = cursor.fetchall()
+        committee_list = []
+        for c in committee_result:
+            committee = {
+                "name": c[0],
+                "position": c[1]
+            }
+            committee_list.append(committee)
 
         query_role = """SELECT 'student' AS table_name FROM student WHERE studentID = %s
                      UNION
@@ -331,13 +788,13 @@ async def detail_activity_document(documentID: str, id: str):
 
         if userRole == "student":
             query_authority = """SELECT * 
-                              FROM absenceDocument 
+                              FROM activityDocument 
                               WHERE documentID = %s AND studentID = %s"""
             cursor.execute(query_authority, (documentID, id))
             authority_result = cursor.fetchone()
         else:
             query_authority = """SELECT progressID 
-                              FROM absenceProgress 
+                              FROM activityProgress 
                               WHERE documentID = %s AND staffID = %s"""
             cursor.execute(query_authority, (documentID, id))
             authority_result = cursor.fetchone()
@@ -345,11 +802,11 @@ async def detail_activity_document(documentID: str, id: str):
         if not authority_result:
             raise HTTPException(status_code=403, detail="You do not have permission to access this document")
 
-        query_progress = """SELECT absenceProgress.*, concat(staff.firstName, " ", staff.lastName), 
+        query_progress = """SELECT activityProgress.*, concat(staff.firstName, " ", staff.lastName), 
                          role.roleName
-                         FROM absenceProgress
-                         JOIN role ON absenceProgress.staff_roleID = role.roleID
-                         JOIN staff ON absenceProgress.staffID = staff.staffID
+                         FROM activityProgress
+                         JOIN role ON activityProgress.staff_roleID = role.roleID
+                         JOIN staff ON activityProgress.staffID = staff.staffID
                          WHERE documentID = %s"""
         cursor.execute(query_progress, (documentID,))
         progress_result = cursor.fetchall()
@@ -358,8 +815,8 @@ async def detail_activity_document(documentID: str, id: str):
             info = {
                 "progressID": p[0],
                 "staffID": p[2],
-                "staffName": p[10],
-                "staffRole": p[11],
+                "staffName": p[11],
+                "staffRole": p[12],
                 "status": p[6],
                 "comment": p[7]
             }
@@ -367,15 +824,35 @@ async def detail_activity_document(documentID: str, id: str):
 
         document_info = {
             "DocumentID": detail_result[0],
-            "DocumentType": detail_result[2],
-            "startTime": detail_result[3],
-            "endTime": detail_result[4],
-            "detail": detail_result[5],
-            "file1": detail_result[6],
-            "file2": detail_result[7],
-            "file2Name": detail_result[8],
-            "createDate": detail_result[9],
-            "editDate": detail_result[10],
+            "startTime": detail_result[2],
+            "endTime": detail_result[3],
+            "code": detail_result[7],
+            "departmentName": detail_result[8],
+            "title": detail_result[9],
+            "location": detail_result[10],
+            "propose": detail_result[11],
+            "payment": detail_result[12],
+            "sustainabilityDetail": detail_result[14],
+            "sustainabilityPropose": detail_result[15],
+            "activityCharacteristic": detail_result[16],
+            "codeOfHonor": detail_result[17],
+            "prepareStart": detail_result[18],
+            "prepareEnd": detail_result[19],
+            "prepareFile": detail_result[20],
+            "evaluationFile": detail_result[21],
+            "budgetDetails": detail_result[22],
+            "scheduleDetails": detail_result[23],
+            "createDate": detail_result[4],
+            "editDate": detail_result[5],
+            "participant": participant_list,
+            "activity": activity_list,
+            "problem": problem_list,
+            "studentQF": studentQF_result,
+            "entrepreneurial": entrepreneurial_result,
+            "evaluation": evaluation_list,
+            "result": result_list,
+            "sustainability": sustainability_list,
+            "committee": committee_list,
             "allProgress": progress
         }
 

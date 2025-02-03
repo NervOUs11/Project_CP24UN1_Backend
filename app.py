@@ -9,14 +9,15 @@ from datetime import datetime
 from typing import Optional
 from sendEmail import email_notification, EmailSchema
 from login_JWT import get_token
-from adminService import (get_all_user, get_all_role, get_all_club, edit_user_role, edit_user_club,
-                          UpdateUserRole, UpdateUserClub)
+from adminService import (get_all_user, get_all_role, get_all_club)
 from absenceDocument import (create_absence_document, delete_absence_document, update_absence_document,
                              approve_absence_document, reject_absence_document, detail_absence_document,
                              AbsenceFormCreate, AbsenceFormUpdate, ApproveDetail, RejectDetail)
 from activityDocument import (create_activity_document, delete_activity_document, update_activity_document,
-                             approve_activity_document, reject_activity_document, detail_activity_document,
-                             ActivityFormCreate, ActivityFormUpdate, ApproveDetail, RejectDetail)
+                              approve_activity_document, reject_activity_document, detail_activity_document,
+                              ActivityFormCreate, ActivityFormUpdate, ApproveDetail, RejectDetail,
+                              get_participant, get_studentQF, get_entrepreneurial, get_evaluation, get_activity,
+                              get_sustainability, get_goal, get_staff)
 
 app = FastAPI()
 ph = PasswordHasher()
@@ -421,7 +422,7 @@ async def delete_absence_doc(documentID: str, id: str):
 
 
 @app.put("/api/userID/{id}/document/absence/edit/{documentID}")
-async def delete_absence_doc(documentID: str, id: str, form: AbsenceFormUpdate):
+async def edit_absence_doc(documentID: str, id: str, form: AbsenceFormUpdate):
     try:
         result = await update_absence_document(documentID, id, form)
         return result
@@ -442,6 +443,78 @@ async def approve_absence_doc(form: ApproveDetail):
 async def reject_absence_doc(form: RejectDetail):
     try:
         result = await reject_absence_document(form)
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/document/activity/allParticipant")
+async def get_all_participant():
+    try:
+        result = await get_participant()
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/document/activity/allStudentQF")
+async def get_all_studentQF():
+    try:
+        result = await get_studentQF()
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/document/activity/allEntrepreneurial")
+async def get_all_entrepreneurial():
+    try:
+        result = await get_entrepreneurial()
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/document/activity/allEvaluation")
+async def get_all_evaluation():
+    try:
+        result = await get_evaluation()
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/document/activity/allActivity")
+async def get_all_activity():
+    try:
+        result = await get_activity()
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/document/activity/allSustainability")
+async def get_all_sustainability():
+    try:
+        result = await get_sustainability()
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/document/activity/allGoal")
+async def get_all_goal():
+    try:
+        result = await get_goal()
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/document/activity/allStaff")
+async def get_all_staff():
+    try:
+        result = await get_staff()
         return result
     except HTTPException as e:
         raise e
@@ -475,7 +548,7 @@ async def delete_activity_doc(documentID: str, id: str):
 
 
 @app.put("/api/userID/{id}/document/activity/edit/{documentID}")
-async def delete_activity_doc(documentID: str, id: str, form: ActivityFormUpdate):
+async def edit_activity_doc(documentID: str, id: str, form: ActivityFormUpdate):
     try:
         result = await update_activity_document(documentID, id, form)
         return result

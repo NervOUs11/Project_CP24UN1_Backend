@@ -5,6 +5,7 @@ from email.message import EmailMessage
 import logging
 import os
 from dotenv import load_dotenv
+from typing import Optional
 
 load_dotenv()
 password = os.getenv("EMAIL_PASSWORD")
@@ -12,7 +13,7 @@ password = os.getenv("EMAIL_PASSWORD")
 
 class EmailSchema(BaseModel):
     primary_recipient: EmailStr
-    alternate_recipient: EmailStr
+    alternate_recipient: Optional[EmailStr] = None
     subject: str
     body: str
 
