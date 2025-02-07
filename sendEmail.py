@@ -5,15 +5,13 @@ from email.message import EmailMessage
 import logging
 import os
 from dotenv import load_dotenv
-from typing import Optional
 
 load_dotenv()
 password = os.getenv("EMAIL_PASSWORD")
 
 
 class EmailSchema(BaseModel):
-    primary_recipient: EmailStr
-    alternate_recipient: Optional[EmailStr] = None
+    email: EmailStr
     subject: str
     body: str
 
@@ -24,39 +22,29 @@ logger = logging.getLogger(__name__)
 
 
 # Function to send email
-def send_email(recipient: str, subject: str, body: str):
+async def send_email(email: EmailSchema):
     EMAIL_ADDRESS = "noreply.kmuttrackform@gmail.com"
     EMAIL_PASSWORD = password
 
     try:
         msg = EmailMessage()
-        msg['Subject'] = subject
+        msg['Subject'] = email.subject
         msg['From'] = EMAIL_ADDRESS
-        msg['To'] = recipient
-        msg.set_content(body)
+        msg['To'] = email.email
+        msg.set_content(email.body)
 
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
             smtp.send_message(msg)
-        logger.info(f"Email successfully sent to {recipient}")
+        logger.info(f"Email successfully sent to {email}")
     except Exception as e:
-        logger.error(f"Error sending email to {recipient}: {str(e)}")
+        logger.error(f"Error sending email to {email}: {str(e)}")
         raise e
 
-
-async def email_notification(email: EmailSchema):
-    try:
-        # Attempt to send email to the primary recipient
-        send_email(email.primary_recipient, email.subject, email.body)
-        # logger.info(f"Send email to primary recipient: {email.primary_recipient}")
-        # return {"message": f"Email is being sent to {email.primary_recipient}"}
-    except Exception as primary_error:
-        logger.warning(primary_error)
-        try:
-            # Attempt to send email to the alternate recipient
-            send_email(email.alternate_recipient, email.subject, email.body)
-            # logger.info(f"Send email to alternate recipient: {email.alternate_recipient}")
-            # return {"message": f"Email is being sent to alternate recipient {email.alternate_recipient}"}
-        except Exception as alternate_error:
-            logger.error(alternate_error)
-            raise HTTPException(status_code=500, detail=f"Failed to send email.")
+# app = FastAPI()
+#
+#
+# @app.post("/send-email")
+# async def send_email_route(email: EmailSchema):
+#     send_email(email)
+#     return {"message": f"Email sent to {email.email}"}

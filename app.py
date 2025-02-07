@@ -7,15 +7,15 @@ from argon2 import PasswordHasher
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
-from sendEmail import email_notification, EmailSchema
+from sendEmail import send_email, EmailSchema
 from login_JWT import get_token
 from adminService import (get_all_user, get_all_role, get_all_club)
 from absenceDocument import (create_absence_document, delete_absence_document, update_absence_document,
                              approve_absence_document, reject_absence_document, detail_absence_document,
-                             AbsenceFormCreate, AbsenceFormUpdate, ApproveDetail, RejectDetail)
+                             AbsenceFormCreate, AbsenceFormUpdate, AbsenceApproveDetail, AbsenceRejectDetail)
 from activityDocument import (create_activity_document, delete_activity_document, update_activity_document,
                               approve_activity_document, reject_activity_document, detail_activity_document,
-                              ActivityFormCreate, ActivityFormUpdate, ApproveDetail, RejectDetail,
+                              ActivityFormCreate, ActivityFormUpdate, ActivityApproveDetail, ActivityRejectDetail,
                               get_participant, get_studentQF, get_entrepreneurial, get_evaluation, get_activity,
                               get_sustainability, get_goal, get_staff)
 
@@ -227,24 +227,6 @@ async def admin_get_all_club():
         raise e
 
 
-# @app.put("/api/admin/editUserRole/{user_id}")
-# async def admin_edit_user_role(user_id: int, role: UpdateUserRole):
-#     try:
-#         result = await edit_user_role(user_id, role)
-#         return result
-#     except HTTPException as e:
-#         raise e
-
-
-# @app.put("/api/admin/editUserClub/{user_id}")
-# async def admin_edit_user_club(user_id: int, club: UpdateUserClub):
-#     try:
-#         result = await edit_user_club(user_id, club)
-#         return result
-#     except HTTPException as e:
-#         raise e
-
-
 @app.get("/api/document/all/{id}")
 async def get_all_document(id: str):
     conn = get_db_connection()
@@ -287,22 +269,23 @@ async def get_all_document(id: str):
             cursor.execute(query_absence_progress, (id,))
             absence_progress_result = cursor.fetchall()
 
-            progress_by_document = {}
-            for p in activity_progress_result + absence_progress_result:
+            absence_progress_by_document = {}
+            activity_progress_by_document = {}
+
+            for p in absence_progress_result:
                 documentID = p[4]
-                if documentID not in progress_by_document:
-                    progress_by_document[documentID] = []
-                progress_by_document[documentID].append({
+                if documentID not in absence_progress_by_document:
+                    absence_progress_by_document[documentID] = []
+                absence_progress_by_document[documentID].append({
                     "status": p[6],
                     "role": p[11]
                 })
-
-            for r in activity_doc_result + absence_doc_result:
+            for r in absence_doc_result:
                 documentID = r[0]
                 document_status = "Waiting for approve"
 
-                if documentID in progress_by_document:
-                    approvals = progress_by_document[documentID]
+                if documentID in absence_progress_by_document:
+                    approvals = absence_progress_by_document[documentID]
 
                     # Check for "Reject"
                     has_reject = any(a["status"] == "Reject" for a in approvals)
@@ -317,6 +300,34 @@ async def get_all_document(id: str):
                                 len(roles_with_approve) >= 3
                         ):
                             document_status = "Approve"
+
+                document_info = {
+                    "documentID": documentID,
+                    "documentType": r[2],
+                    "createDate": r[9],
+                    "editDate": r[10],
+                    "status": document_status
+                }
+                all_doc.append(document_info)
+
+            for p in activity_progress_result:
+                documentID = p[4]
+                if documentID not in activity_progress_by_document:
+                    activity_progress_by_document[documentID] = []
+                activity_progress_by_document[documentID].append({
+                    "status": p[6],
+                    "role": p[11]
+                })
+
+            for r in activity_doc_result:
+                documentID = r[0]
+                document_status = "Waiting for approve"
+                if documentID in activity_progress_by_document:
+                    approvals = activity_progress_by_document[documentID]
+                    if any(a["status"] == "Reject" for a in approvals):     # if it has one "Reject"
+                        document_status = "Reject"
+                    elif all(a["status"] == "Approve" for a in approvals):  # if all are "Approve"
+                        document_status = "Approve"
 
                 document_info = {
                     "documentID": documentID,
@@ -431,7 +442,7 @@ async def edit_absence_doc(documentID: str, id: str, form: AbsenceFormUpdate):
 
 
 @app.put("/api/document/absence/approve")
-async def approve_absence_doc(form: ApproveDetail):
+async def approve_absence_doc(form: AbsenceApproveDetail):
     try:
         result = await approve_absence_document(form)
         return result
@@ -440,7 +451,7 @@ async def approve_absence_doc(form: ApproveDetail):
 
 
 @app.put("/api/document/absence/reject")
-async def reject_absence_doc(form: RejectDetail):
+async def reject_absence_doc(form: AbsenceRejectDetail):
     try:
         result = await reject_absence_document(form)
         return result
@@ -557,7 +568,7 @@ async def edit_activity_doc(documentID: str, id: str, form: ActivityFormUpdate):
 
 
 @app.put("/api/document/activity/approve")
-async def approve_activity_doc(form: ApproveDetail):
+async def approve_activity_doc(form: ActivityApproveDetail):
     try:
         result = await approve_activity_document(form)
         return result
@@ -566,7 +577,7 @@ async def approve_activity_doc(form: ApproveDetail):
 
 
 @app.put("/api/document/activity/reject")
-async def reject_activity_doc(form: RejectDetail):
+async def reject_activity_doc(form: ActivityRejectDetail):
     try:
         result = await reject_activity_document(form)
         return result

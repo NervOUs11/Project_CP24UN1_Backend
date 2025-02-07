@@ -5,7 +5,7 @@ import mysql.connector
 from fastapi import HTTPException
 from dotenv import load_dotenv
 import os
-from sendEmail import email_notification, EmailSchema
+from sendEmail import send_email, EmailSchema
 
 
 load_dotenv()
@@ -38,14 +38,14 @@ class AbsenceFormUpdate(BaseModel):
     attachmentFile2Name: Optional[str] = None
 
 
-class ApproveDetail(BaseModel):
+class AbsenceApproveDetail(BaseModel):
     progressID: int
     staffID: int
     documentID: int
     status: str = "Approve"
 
 
-class RejectDetail(BaseModel):
+class AbsenceRejectDetail(BaseModel):
     progressID: int
     staffID: int
     documentID: int
@@ -129,18 +129,17 @@ async def create_absence_document(form: AbsenceFormCreate):
                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
 
         step_count = 0
-        # main_email_2 = None
-        # alter_email_2 = None
+        email_2 = None
         if len(all_staff_details) == 4:  # student has 2 advisor
             step = [1, 1, 2, 3]
-            # main_email_1 = all_staff_details[0][1]  # first advisor main email
-            # alter_email_1 = all_staff_details[0][6]  # first advisor alter email
-            # main_email_2 = all_staff_details[1][1]  # second advisor main email
-            # alter_email_2 = all_staff_details[1][6]  # second advisor alter email
+            email_1 = all_staff_details[0][5]  # first advisor email
+            email_2 = all_staff_details[1][5]  # second advisor email
+            print(email_1)
+            print(email_2)
         else:
             step = [1, 2, 3]  # student has 1 advisor
-            # main_email_1 = all_staff_details[0][1]  # first advisor main email
-            # alter_email_1 = all_staff_details[0][6]  # first advisor alter email
+            email_1 = all_staff_details[0][5]  # first advisor email
+            print(email_1)
         for s in all_staff_details:
             cursor.execute(insert_progress, (
                 step[step_count],
@@ -156,37 +155,33 @@ async def create_absence_document(form: AbsenceFormCreate):
 
         conn.commit()
 
-        # # Send email notification
-        # subject = "New Document to sign."
-        # body = (f"You have document to sign\n"
-        #         f"From student ID: {form.studentID}\n"
-        #         f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
-        #
-        # # If student has 1 advisor (main_email_2 and alter_email_2 is None)
-        # if main_email_2 is None and alter_email_2 is None:
-        #     email_payload = {
-        #         "primary_recipient": main_email_1,
-        #         "alternate_recipient": alter_email_1,
-        #         "subject": subject,
-        #         "body": body
-        #     }
-        #     await email_notification(EmailSchema(**email_payload))
-        # # If student has 2 advisor
-        # else:
-        #     email_payload = {
-        #         "primary_recipient": main_email_1,
-        #         "alternate_recipient": alter_email_1,
-        #         "subject": subject,
-        #         "body": body
-        #     }
-        #     email_payload_2 = {
-        #         "primary_recipient": main_email_2,
-        #         "alternate_recipient": alter_email_2,
-        #         "subject": subject,
-        #         "body": body
-        #     }
-        #     await email_notification(EmailSchema(**email_payload))
-        #     await email_notification(EmailSchema(**email_payload_2))
+        # Send email notification
+        subject = "New Document to sign."
+        body = (f"You have document to sign\n"
+                f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
+
+        # If student has 1 advisor (email_2 is None)
+        if email_2 is None:
+            email_payload = {
+                "email": email_1,
+                "subject": subject,
+                "body": body
+            }
+            await send_email(EmailSchema(**email_payload))
+        # If student has 2 advisor
+        else:
+            email_payload = {
+                "email": email_1,
+                "subject": subject,
+                "body": body
+            }
+            email_payload_2 = {
+                "email": email_2,
+                "subject": subject,
+                "body": body
+            }
+            await send_email(EmailSchema(**email_payload))
+            await send_email(EmailSchema(**email_payload_2))
 
         return {"message": "Created successfully"}, 201
 
@@ -292,6 +287,7 @@ async def update_absence_document(documentID: str, id: str, form: AbsenceFormUpd
         ))
 
         conn.commit()
+
         return {"message": "Edited successfully"}
 
     except HTTPException as e:
@@ -358,8 +354,8 @@ async def detail_absence_document(documentID: str, id: str):
             info = {
                 "progressID": p[0],
                 "staffID": p[2],
-                "staffName": p[10],
-                "staffRole": p[11],
+                "staffName": p[11],
+                "staffRole": p[12],
                 "status": p[6],
                 "comment": p[7]
             }
@@ -395,9 +391,10 @@ async def detail_absence_document(documentID: str, id: str):
         conn.close()
 
 
-async def approve_absence_document(detail: ApproveDetail):
+async def approve_absence_document(detail: AbsenceApproveDetail):
     conn = get_db_connection()
     cursor = conn.cursor()
+    date = datetime.now()
 
     try:
         # Check if progressID and documentID exist
@@ -422,10 +419,11 @@ async def approve_absence_document(detail: ApproveDetail):
 
         # Approve form
         update_approve_query = """UPDATE absenceProgress
-                               SET status = %s
+                               SET status = %s, approvedAt = %s
                                WHERE progressID = %s AND staffID = %s AND documentID = %s"""
         cursor.execute(update_approve_query, (
             detail.status,
+            date,
             detail.progressID,
             detail.staffID,
             detail.documentID
@@ -443,37 +441,36 @@ async def approve_absence_document(detail: ApproveDetail):
         staffID = cursor.fetchone()
         if staffID:
             update_other_approve_query = """UPDATE absenceProgress
-                                         SET status = %s
+                                         SET status = %s, approvedAt = %s
                                          WHERE staffID = %s AND documentID = %s;"""
             cursor.execute(update_other_approve_query, (
                 "Other advisor approve",
+                date,
                 staffID[0],
                 detail.documentID
             ))
 
         # Send email to notify next staff
-        # next_staff_query = """SELECT absenceProgress.step, absenceProgress.studentID, staff.username, staff.email
-        #                    FROM staff
-        #                    JOIN absenceProgress ON staff.staffID = absenceProgress.staffID
-        #                    WHERE absenceProgress.documentID = %s
-        #                    AND absenceProgress.status = 'Waiting for approve'
-        #                    GROUP BY staff.staffID
-        #                    ORDER BY absenceProgress.step ASC
-        #                    LIMIT 1"""
-        # cursor.execute(next_staff_query, (detail.documentID, ))
-        # next_staff = cursor.fetchone()
-        # if next_staff:
-        #     subject = "New Document to sign."
-        #     body = (f"You have document to sign\n"
-        #             f"From student ID: {next_staff[1]}\n"
-        #             f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
-        #     email_payload = {
-        #         "primary_recipient": next_staff[2],
-        #         "alternate_recipient": next_staff[3],
-        #         "subject": subject,
-        #         "body": body
-        #     }
-        #     await email_notification(EmailSchema(**email_payload))
+        next_staff_email_query = """SELECT staff.email
+                                 FROM staff
+                                 JOIN absenceProgress ON staff.staffID = absenceProgress.staffID
+                                 WHERE absenceProgress.documentID = %s
+                                 AND absenceProgress.status = 'Waiting for approve'
+                                 GROUP BY staff.staffID
+                                 ORDER BY absenceProgress.step ASC
+                                 LIMIT 1"""
+        cursor.execute(next_staff_email_query, (detail.documentID, ))
+        next_staff_email = cursor.fetchone()
+        if next_staff_email:
+            subject = "New Document to sign."
+            body = (f"You have document to sign\n"
+                    f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
+            email_payload = {
+                "email": next_staff_email[0],
+                "subject": subject,
+                "body": body
+            }
+            await send_email(EmailSchema(**email_payload))
 
         conn.commit()
 
@@ -490,14 +487,15 @@ async def approve_absence_document(detail: ApproveDetail):
         conn.close()
 
 
-async def reject_absence_document(detail: RejectDetail):
+async def reject_absence_document(detail: AbsenceRejectDetail):
     conn = get_db_connection()
     cursor = conn.cursor()
+    date = datetime.now()
 
     try:
         # Check if progressID and documentID exist
         check_query = """SELECT progressID, documentID 
-                      FROM absenceProgress 
+                      FROM absenceProgress
                       WHERE progressID = %s AND documentID = %s"""
         cursor.execute(check_query, (detail.progressID, detail.documentID))
         result = cursor.fetchone()
@@ -516,11 +514,12 @@ async def reject_absence_document(detail: RejectDetail):
             raise HTTPException(status_code=403, detail="Staff does not have the authority to approve this document")
 
         update_query = """UPDATE absenceProgress
-                       SET status = %s, comment = %s
+                       SET status = %s, comment = %s, approvedAt = %s
                        WHERE progressID = %s AND staffID = %s AND documentID = %s"""
         cursor.execute(update_query, (
             detail.status,
             detail.comment,
+            date,
             detail.progressID,
             detail.staffID,
             detail.documentID
