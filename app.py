@@ -17,7 +17,7 @@ from activityDocument import (create_activity_document, delete_activity_document
                               approve_activity_document, reject_activity_document, detail_activity_document,
                               ActivityFormCreate, ActivityFormUpdate, ActivityApproveDetail, ActivityRejectDetail,
                               get_participant, get_studentQF, get_entrepreneurial, get_evaluation, get_activity,
-                              get_sustainability, get_goal, get_staff)
+                              get_sustainability, get_goal, get_staff, get_student)
 
 app = FastAPI()
 ph = PasswordHasher()
@@ -526,6 +526,15 @@ async def get_all_goal():
 async def get_all_staff():
     try:
         result = await get_staff()
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/document/activity/allStudent")
+async def get_all_student():
+    try:
+        result = await get_student()
         return result
     except HTTPException as e:
         raise e

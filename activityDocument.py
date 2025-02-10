@@ -275,6 +275,26 @@ async def get_staff():
         conn.close()
 
 
+async def get_student():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query_all_student = """SELECT student.studentID, concat(student.firstName, " ", student.lastName), 
+                            department.departmentName, student.year, student.tel
+                            FROM student JOIN department ON student.departmentID = department.departmentID
+                            """
+        cursor.execute(query_all_student)
+        all_student = cursor.fetchall()
+        return all_student
+
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
 async def create_activity_document(form: ActivityFormCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
