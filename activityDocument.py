@@ -262,7 +262,7 @@ async def get_staff():
     cursor = conn.cursor()
 
     try:
-        query_all_staff = """SELECT * FROM staff"""
+        query_all_staff = """SELECT staff.*, role.roleName FROM staff JOIN role ON staff.roleID = role.roleID"""
         cursor.execute(query_all_staff)
         all_staff = cursor.fetchall()
         return all_staff
