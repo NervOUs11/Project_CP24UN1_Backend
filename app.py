@@ -332,8 +332,8 @@ async def get_all_document(id: str):
                 document_info = {
                     "documentID": documentID,
                     "documentType": r[2],
-                    "createDate": r[9],
-                    "editDate": r[10],
+                    "createDate": r[5],
+                    "editDate": r[6],
                     "status": document_status
                 }
                 all_doc.append(document_info)

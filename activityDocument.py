@@ -24,7 +24,7 @@ class ActivityFormCreate(BaseModel):
     title: str
     location: str
     propose: str
-    payment: str
+    payment: float
     staffID: int
     sustainabilityDetail: str
     sustainabilityPropose: str
@@ -294,6 +294,7 @@ async def get_student():
     finally:
         cursor.close()
         conn.close()
+
 
 async def create_activity_document(form: ActivityFormCreate):
     conn = get_db_connection()
