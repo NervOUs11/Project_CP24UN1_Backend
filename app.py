@@ -184,12 +184,13 @@ async def log_in(user: UserLogin):
                     "lastName": userResult[3],
                     "tel": userResult[4],
                     "email": userResult[5],
-                    "role": roleName[0],
+                    "role": roleName[0] if roleName else None,
                     "departmentID": userResult[7],
-                    "department": departmentName[0],
+                    "department": departmentName[0] if departmentName else None,
                     "facultyID": userResult[8],
-                    "faculty": facultyName[0],
+                    "faculty": facultyName[0] if facultyName else None,
                 }
+                print(user_info)
             return user_info
 
         except Exception as e:
