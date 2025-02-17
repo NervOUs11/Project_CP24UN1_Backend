@@ -992,8 +992,9 @@ async def detail_activity_document(documentID: str, id: str):
 
         document_info = {
             "DocumentID": detail_result[0],
-            "startTime": detail_result[2],
-            "endTime": detail_result[3],
+            "type": detail_result[2],
+            "startTime": detail_result[3],
+            "endTime": detail_result[4],
             "code": detail_result[7],
             "departmentName": detail_result[8],
             "title": detail_result[9],
