@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 import mysql.connector
 from fastapi import HTTPException
@@ -71,9 +71,11 @@ def get_db_connection():
 async def create_absence_document(form: AbsenceFormCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
+    form.startTime = form.startTime.astimezone(timezone.utc)
+    form.endTime = form.endTime.astimezone(timezone.utc)
 
     try:
-        create_date = datetime.now()
+        create_date = datetime.now(timezone.utc)
         edit_date = create_date
         insert_form = """INSERT INTO absenceDocument (studentID, type, startTime, endTime, detail, attachmentFile1,
                       attachmentFile2, attachmentFile2Name, createDate, editDate)
@@ -240,6 +242,8 @@ async def delete_absence_document(documentID: str, id: str):
 async def update_absence_document(documentID: str, id: str, form: AbsenceFormUpdate):
     conn = get_db_connection()
     cursor = conn.cursor()
+    form.startTime = form.startTime.astimezone(timezone.utc)
+    form.endTime = form.endTime.astimezone(timezone.utc)
 
     try:
         document_check_query = """SELECT * 
@@ -258,7 +262,7 @@ async def update_absence_document(documentID: str, id: str, form: AbsenceFormUpd
         if not user_match:
             raise HTTPException(status_code=403, detail="User do not have permission to edit")
 
-        editDate = datetime.now()
+        editDate = datetime.now(timezone.utc)
         update_form = """UPDATE absenceDocument
                       SET type = %s, startTime = %s, endTime = %s, detail = %s, 
                       attachmentFile1 = %s, attachmentFile2 = %s, attachmentFile2Name = %s, editDate = %s

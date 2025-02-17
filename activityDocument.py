@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 import mysql.connector
 from fastapi import HTTPException
@@ -299,9 +299,13 @@ async def get_student():
 async def create_activity_document(form: ActivityFormCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
+    form.startTime = form.startTime.astimezone(timezone.utc)
+    form.endTime = form.endTime.astimezone(timezone.utc)
+    form.prepareStart = form.prepareStart.astimezone(timezone.utc)
+    form.prepareEnd = form.prepareEnd.astimezone(timezone.utc)
 
     try:
-        create_date = datetime.now()
+        create_date = datetime.now(timezone.utc)
         edit_date = create_date
         insert_form = """INSERT INTO activityDocument (studentID, type, startTime, endTime, createDate, editDate,
                       code, departmentName, title, location, propose, payment, staffID, sustainabilityDetail,
@@ -636,6 +640,10 @@ async def delete_activity_document(documentID: str, id: str):
 async def update_activity_document(documentID: str, id: str, form: ActivityFormUpdate):
     conn = get_db_connection()
     cursor = conn.cursor()
+    form.startTime = form.startTime.astimezone(timezone.utc)
+    form.endTime = form.endTime.astimezone(timezone.utc)
+    form.prepareStart = form.prepareStart.astimezone(timezone.utc)
+    form.prepareEnd = form.prepareEnd.astimezone(timezone.utc)
 
     try:
         document_check_query = """SELECT * 
@@ -654,7 +662,7 @@ async def update_activity_document(documentID: str, id: str, form: ActivityFormU
         if not user_match:
             raise HTTPException(status_code=403, detail="User do not have permission to edit")
 
-        editDate = datetime.now()
+        editDate = datetime.now(timezone.utc)
         update_form = """UPDATE activityDocument
                       SET type = %s, startTime = %s, endTime = %s, code = %s, departmentName = %s, title = %s,
                       location = %s, propose = %s, payment = %s, sustainabilityDetail = %s, sustainabilityPropose = %s,
