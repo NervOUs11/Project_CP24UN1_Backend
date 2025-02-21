@@ -388,6 +388,7 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `kmutt_database`.`document_studentQF` (
   `documentID` INT NOT NULL,
   `student_QF_ID` INT NOT NULL,
+  `percentage` FLOAT NOT NULL,
   PRIMARY KEY (`documentID`, `student_QF_ID`),
   INDEX `fk_activityDocument_has_studentQF_studentQF1_idx` (`student_QF_ID` ASC) VISIBLE,
   INDEX `fk_activityDocument_has_studentQF_activityDocument1_idx` (`documentID` ASC) VISIBLE,
