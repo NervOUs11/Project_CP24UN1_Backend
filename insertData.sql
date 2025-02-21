@@ -1,19 +1,21 @@
 -- Insert data into `faculty` table
 INSERT INTO `kmutt_database`.`faculty` (`facultyName`) VALUES
-('Engineering'),
-('Science'),
-('Business Administration'),
-('SIT');
+('คณะวิศวกรรมศาสตร์'),
+('คณะวิทยาศาสตร์'),
+('คณะบริหารธุรกิจ'),
+('คณะเทคโนโลยีสารสนเทศ'),
+('องค์การนักศึกษา'),
+('สภานักศึกษา');
 
 -- Insert data into `department` table
 INSERT INTO `kmutt_database`.`department` (`departmentName`, `facultyID`) VALUES
-('Computer Science', 1),
-('Electrical Engineering', 1),
-('Physics', 2),
-('Finance', 3),
-('IT', 4),
-('CS', 4),
-('DSI', 4);
+('สาขาวิศวกรรมคอมพิวเตอร์', 1),
+('สาขาวิศวกรรมไฟฟ้า', 1),
+('สาขาฟิสิกส์', 2),
+('สาขาการเงิน', 3),
+('สาขาเทคโนโลยีสารสนเทศ', 4),
+('สาขาวิทยาการคอมพิวเตอร์', 4),
+('สาขานวัตกรรมบริการดิจิทัล', 4);
 
 -- Insert data into `role` table
 INSERT INTO `kmutt_database`.`role` (`roleName`) VALUES
@@ -37,10 +39,10 @@ INSERT INTO `kmutt_database`.`role` (`roleName`) VALUES
 
 -- Insert data into `club` table
 INSERT INTO `kmutt_database`.`club` (`clubName`) VALUES
-('อาสาพัฒนาชนบท'),
-('ติว'),
-('พุทธศาสตร์'),
-('ฟุตบอล');
+('ชมรมอาสาพัฒนาชนบท'),
+('ชมรมติว'),
+('ชมรมพุทธศาสตร์'),
+('ชมรมฟุตบอล');
 
 -- Insert data into `staff` table
 INSERT INTO `kmutt_database`.`staff` (`username`, `firstName`, `lastName`, `tel`, `email`, `roleID`, `departmentID`, `facultyID`, `clubID`) VALUES
@@ -68,9 +70,9 @@ INSERT INTO `kmutt_database`.`staff` (`username`, `firstName`, `lastName`, `tel`
 
 -- Insert data into `student` table
 INSERT INTO `kmutt_database`.`student` (`studentID`, `username`, `firstName`, `lastName`, `tel`, `email`,
-`year`, `departmentID`, `facultyID`, `currentGPA`, `cumulativeGPA`) VALUES
-(64130500045, 'std01', 'Nitis', 'Visayataksin', '0812345678', 'nitis.v@mail.kmutt.ac.th', 2, 5, 4, 3, 2.9),
-(64130500051, 'std02', 'Phongsathon', 'Chansongkrao', '0812345678', 'kitokidandkwa@gmail.com', 3, 3, 2, 3, 3.2);
+`year`, `departmentID`, `facultyID`, `currentGPA`, `cumulativeGPA`, `clubID`) VALUES
+(64130500045, 'std01', 'Nitis', 'Visayataksin', '0812345678', 'nitis.v@mail.kmutt.ac.th', 2, 5, 4, 3, 2.9, 1),
+(64130500051, 'std02', 'Phongsathon', 'Chansongkrao', '0812345678', 'kitokidandkwa@gmail.com', 3, 3, 2, 3, 3.2, 3);
 
 -- Insert data into `student_advisor` table
 INSERT INTO `kmutt_database`.`student_advisor` (`staffID`, `studentID`) VALUES

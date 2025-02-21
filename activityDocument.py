@@ -39,7 +39,7 @@ class ActivityFormCreate(BaseModel):
     participant: List[Tuple[int, int]] = []                  # [(participantID, count)]
     activity: List[Tuple[int, int]] = []                     # [(activityID, countHour)]
     problem: List[Tuple[str, str]] = []                      # [(problemDetail, solution)]
-    studentQF: List[int] = []                                # [studentQF_ID]
+    studentQF: List[Tuple[int, int]] = []                    # [studentQF_ID, percentage]
     entrepreneurial: List[int] = []                          # [entrepreneurialID]
     evaluation: List[Tuple[int, Optional[str]]] = []         # [(evaluationID, otherEvaluationName)]
     result: List[Tuple[str, str, str]] = []                  # [(kpi, detail, target)]
@@ -72,7 +72,7 @@ class ActivityFormUpdate(BaseModel):
     participant: List[Tuple[int, int]] = []                 # [(participantID, count)]
     activity: List[Tuple[int, int]] = []                    # [(activityID, countHour)]
     problem: List[Tuple[str, str]] = []                     # [(problemDetail, solution)]
-    studentQF: List[int] = []                               # [studentQF_ID]
+    studentQF: List[Tuple[int, int]] = []                    # [studentQF_ID, percentage]
     entrepreneurial: List[int] = []                         # [entrepreneurialID]
     evaluation: List[Tuple[int, Optional[str]]] = []        # [(evaluationID, otherEvaluationName)]
     result: List[Tuple[str, str, str]] = []                 # [(kpi, detail, target)]
@@ -140,7 +140,8 @@ async def get_studentQF():
         cursor.execute(query_all_studentQF)
         all_studentQF = cursor.fetchall()
         studentQF_result = [{"studentQF_ID": record[0],
-                             "studentQF_Name": record[1]}
+                             "studentQF_Name": record[1],
+                             "percentage": record[2]}
                             for record in all_studentQF]
         return studentQF_result
 
@@ -296,6 +297,48 @@ async def get_student():
         conn.close()
 
 
+async def get_faculty():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query_all_faculty = """SELECT * FROM faculty"""
+        cursor.execute(query_all_faculty)
+        all_faculty = cursor.fetchall()
+        faculty_result = [{"facultyID": record[0],
+                           "facultyName": record[1]}
+                          for record in all_faculty]
+        return faculty_result
+
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+async def get_club():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        query_all_club = """SELECT * FROM club"""
+        cursor.execute(query_all_club)
+        all_club = cursor.fetchall()
+        club_result = [{"clubID": record[0],
+                        "clubName": record[1]}
+                       for record in all_club]
+        return club_result
+
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
 async def create_activity_document(form: ActivityFormCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -370,14 +413,15 @@ async def create_activity_document(form: ActivityFormCreate):
 
         # check studentQF_ID in table studentQF and insert into document_studentQF table
         for studentQF in form.studentQF:
+            print(studentQF)
             check_studentQF_query = """SELECT * FROM studentQF WHERE student_QF_ID = %s"""
-            cursor.execute(check_studentQF_query, (studentQF,))
+            cursor.execute(check_studentQF_query, (studentQF[0],))
             studentQF_result = cursor.fetchone()
             if not studentQF_result:
                 raise HTTPException(status_code=404, detail="StudentQF not found")
-            insert_studentQF_query = """INSERT INTO document_studentQF (documentID, student_QF_ID)
-                                    VALUES (%s, %s)"""
-            cursor.execute(insert_studentQF_query, (document_id, studentQF))
+            insert_studentQF_query = """INSERT INTO document_studentQF (documentID, student_QF_ID, percentage)
+                                   VALUES (%s, %s, %s)"""
+            cursor.execute(insert_studentQF_query, (document_id, studentQF[0], studentQF[1]))
 
         # check entrepreneurialID in table entrepreneurial and insert into document_entrepreneurial table
         for entrepreneurial in form.entrepreneurial:
@@ -733,13 +777,13 @@ async def update_activity_document(documentID: str, id: str, form: ActivityFormU
         cursor.execute(delete_studentQF, (documentID,))
         for studentQF in form.studentQF:
             check_studentQF_query = """SELECT * FROM studentQF WHERE student_QF_ID = %s"""
-            cursor.execute(check_studentQF_query, (studentQF,))
+            cursor.execute(check_studentQF_query, (studentQF[0],))
             studentQF_result = cursor.fetchone()
             if not studentQF_result:
                 raise HTTPException(status_code=404, detail="StudentQF not found")
-            insert_studentQF_query = """INSERT INTO document_studentQF (documentID, student_QF_ID)
-                                     VALUES (%s, %s)"""
-            cursor.execute(insert_studentQF_query, (documentID, studentQF))
+            insert_studentQF_query = """INSERT INTO document_studentQF (documentID, student_QF_ID, percentage)
+                                     VALUES (%s, %s, %s)"""
+            cursor.execute(insert_studentQF_query, (documentID, studentQF[0], studentQF[1]))
 
         # edit entrepreneurial in document_entrepreneurial table
         delete_entrepreneurial = """DELETE FROM document_entrepreneurial WHERE documentID = %s"""

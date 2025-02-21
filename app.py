@@ -17,7 +17,7 @@ from activityDocument import (create_activity_document, delete_activity_document
                               approve_activity_document, reject_activity_document, detail_activity_document,
                               ActivityFormCreate, ActivityFormUpdate, ActivityApproveDetail, ActivityRejectDetail,
                               get_participant, get_studentQF, get_entrepreneurial, get_evaluation, get_activity,
-                              get_sustainability, get_goal, get_staff, get_student)
+                              get_sustainability, get_goal, get_staff, get_student, get_faculty, get_club)
 
 app = FastAPI()
 ph = PasswordHasher()
@@ -66,33 +66,6 @@ async def log_in(user: UserLogin):
     cursor = conn.cursor()
 
     try:
-        # Login with my own database
-        # username_query = """SELECT 'student' AS user_type, username
-        #                  FROM student WHERE username = %s
-        #                  UNION ALL
-        #                  SELECT 'staff' AS user_type, username
-        #                  FROM staff WHERE username = %s"""
-        # cursor.execute(username_query, (user.username, user.username))
-        # result = cursor.fetchone()
-        # if result is None:
-        #     raise HTTPException(status_code=404, detail="User not found")
-        # userRole = result[0]
-        #
-        # try:
-        #     if userRole == 'student':
-        #         select_query = "SELECT password FROM student WHERE username = %s"
-        #     elif userRole == 'staff':
-        #         select_query = "SELECT password FROM staff WHERE username = %s"
-        #     else:
-        #         select_query = "SELECT password FROM student WHERE username = %s"
-        #         print("Not student or staff")
-        #     cursor.execute(select_query, (user.username,))
-        #     passwordResult = cursor.fetchone()
-        #     stored_password = passwordResult[0]
-        #     ph.verify(stored_password, user.password)
-        # except Exception:
-        #     raise HTTPException(status_code=401, detail="Invalid password")
-
         # Login with JWT
         try:
             response = await get_token(user.username, user.password)
@@ -123,17 +96,18 @@ async def log_in(user: UserLogin):
                 select_user = "SELECT * FROM student WHERE username = %s"
                 cursor.execute(select_user, (user.username,))
                 userResult = cursor.fetchone()
-
                 # get department name
                 select_department = "SELECT departmentName FROM department WHERE departmentID = %s"
                 cursor.execute(select_department, (userResult[7],))
                 departmentName = cursor.fetchone()
-
                 # get faculty name
                 select_faculty = "SELECT facultyName FROM faculty WHERE facultyID = %s"
                 cursor.execute(select_faculty, (userResult[8],))
                 facultyName = cursor.fetchone()
-
+                # get club name
+                select_club = "SELECT clubName FROM club WHERE clubID = %s"
+                cursor.execute(select_club, (userResult[11],))
+                clubName = cursor.fetchone()
                 # get advisor
                 select_advisor = """SELECT concat(staff.firstName, " ", staff.lastName)
                                  FROM student_advisor 
@@ -157,7 +131,9 @@ async def log_in(user: UserLogin):
                     "faculty": facultyName[0],
                     "currentGPA": userResult[9],
                     "cumulativeGPA": userResult[10],
-                    "advisor": advisorName
+                    "advisor": advisorName,
+                    "clubID": userResult[11] if userResult else None,
+                    "club": clubName[0] if clubName else None
                 }
             else:  # staff
                 # get all user data
@@ -176,6 +152,10 @@ async def log_in(user: UserLogin):
                 select_faculty = "SELECT facultyName FROM faculty WHERE facultyID = %s"
                 cursor.execute(select_faculty, (userResult[8],))
                 facultyName = cursor.fetchone()
+                # get club name
+                select_club = "SELECT clubName FROM club WHERE clubID = %s"
+                cursor.execute(select_club, (userResult[9],))
+                clubName = cursor.fetchone()
 
                 user_info = {
                     "staffID": userResult[0],
@@ -189,8 +169,9 @@ async def log_in(user: UserLogin):
                     "department": departmentName[0] if departmentName else None,
                     "facultyID": userResult[8],
                     "faculty": facultyName[0] if facultyName else None,
+                    "clubID": userResult[9] if userResult else None,
+                    "club": clubName[0] if clubName else None
                 }
-                print(user_info)
             return user_info
 
         except Exception as e:
@@ -536,6 +517,24 @@ async def get_all_staff():
 async def get_all_student():
     try:
         result = await get_student()
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/document/activity/allFaculty")
+async def get_all_faculty():
+    try:
+        result = await get_faculty()
+        return result
+    except HTTPException as e:
+        raise e
+
+
+@app.get("/api/document/activity/allClub")
+async def get_all_club():
+    try:
+        result = await get_club()
         return result
     except HTTPException as e:
         raise e
