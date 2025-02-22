@@ -140,8 +140,7 @@ async def get_studentQF():
         cursor.execute(query_all_studentQF)
         all_studentQF = cursor.fetchall()
         studentQF_result = [{"studentQF_ID": record[0],
-                             "studentQF_Name": record[1],
-                             "percentage": record[2]}
+                             "studentQF_Name": record[1]}
                             for record in all_studentQF]
         return studentQF_result
 
@@ -928,16 +927,24 @@ async def detail_activity_document(documentID: str, id: str):
             }
             problem_list.append(problem)
 
-        query_document_studentQF = """SELECT studentQF.name FROM studentQF JOIN document_studentQF
+        query_document_studentQF = """SELECT studentQF.name, document_studentQF.percentage
+                                   FROM studentQF JOIN document_studentQF
                                    ON studentQF.student_QF_ID = document_studentQF.student_QF_ID 
                                    WHERE document_studentQF.documentID = %s"""
         cursor.execute(query_document_studentQF, (documentID,))
         studentQF_result = cursor.fetchall()
+        studentQF_list = []
+        for s in studentQF_result:
+            studentQF = {
+                "name": s[0],
+                "percentage": s[1]
+            }
+            studentQF_list.append(studentQF)
 
         query_document_entrepreneurial = """SELECT entrepreneurial.entrepreneurialName FROM entrepreneurial
                                          JOIN document_entrepreneurial 
                                          ON entrepreneurial.entrepreneurialID = document_entrepreneurial.entrepreneurialID
-                                            WHERE document_entrepreneurial.documentID = %s"""
+                                         WHERE document_entrepreneurial.documentID = %s"""
         cursor.execute(query_document_entrepreneurial, (documentID,))
         entrepreneurial_result = cursor.fetchall()
 
@@ -1068,7 +1075,7 @@ async def detail_activity_document(documentID: str, id: str):
             "participant": participant_list,
             "activity": activity_list,
             "problem": problem_list,
-            "studentQF": studentQF_result,
+            "studentQF": studentQF_list,
             "entrepreneurial": entrepreneurial_result,
             "evaluation": evaluation_list,
             "result": result_list,
@@ -1130,30 +1137,29 @@ async def approve_activity_document(detail: ActivityApproveDetail):
             detail.staffID,
             detail.documentID
         ))
+        conn.commit()
 
         # Send email to notify next staff
-        # next_staff_email_query = """SELECT staff.email
-        #                          FROM staff
-        #                          JOIN activityProgress ON staff.staffID = activityProgress.staffID
-        #                          WHERE activityProgress.documentID = %s
-        #                          AND activityProgress.status = 'Waiting for approve'
-        #                          GROUP BY staff.staffID
-        #                          ORDER BY activityProgress.step ASC
-        #                          LIMIT 1"""
-        # cursor.execute(next_staff_email_query, (detail.documentID,))
-        # next_staff_email = cursor.fetchone()
-        # if next_staff_email:
-        #     subject = "New Document to sign."
-        #     body = (f"You have document to sign\n"
-        #             f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
-        #     email_payload = {
-        #         "email": next_staff_email[0],
-        #         "subject": subject,
-        #         "body": body
-        #     }
-        #     await send_email(EmailSchema(**email_payload))
-
-        conn.commit()
+        next_staff_email_query = """SELECT staff.email
+                                 FROM staff
+                                 JOIN activityProgress ON staff.staffID = activityProgress.staffID
+                                 WHERE activityProgress.documentID = %s
+                                 AND activityProgress.status = 'Waiting for approve'
+                                 GROUP BY staff.staffID
+                                 ORDER BY activityProgress.step ASC
+                                 LIMIT 1"""
+        cursor.execute(next_staff_email_query, (detail.documentID,))
+        next_staff_email = cursor.fetchone()
+        if next_staff_email:
+            subject = "New Document to sign."
+            body = (f"You have document to sign\n"
+                    f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
+            email_payload = {
+                "email": next_staff_email[0],
+                "subject": subject,
+                "body": body
+            }
+            await send_email(EmailSchema(**email_payload))
 
         return {"message": "Approve successfully"}
 

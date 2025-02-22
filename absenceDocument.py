@@ -454,29 +454,29 @@ async def approve_absence_document(detail: AbsenceApproveDetail):
                 detail.documentID
             ))
 
-        # Send email to notify next staff
-        # next_staff_email_query = """SELECT staff.email
-        #                          FROM staff
-        #                          JOIN absenceProgress ON staff.staffID = absenceProgress.staffID
-        #                          WHERE absenceProgress.documentID = %s
-        #                          AND absenceProgress.status = 'Waiting for approve'
-        #                          GROUP BY staff.staffID
-        #                          ORDER BY absenceProgress.step ASC
-        #                          LIMIT 1"""
-        # cursor.execute(next_staff_email_query, (detail.documentID, ))
-        # next_staff_email = cursor.fetchone()
-        # if next_staff_email:
-        #     subject = "New Document to sign."
-        #     body = (f"You have document to sign\n"
-        #             f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
-        #     email_payload = {
-        #         "email": next_staff_email[0],
-        #         "subject": subject,
-        #         "body": body
-        #     }
-        #     await send_email(EmailSchema(**email_payload))
-
         conn.commit()
+
+        # Send email to notify next staff
+        next_staff_email_query = """SELECT staff.email
+                                 FROM staff
+                                 JOIN absenceProgress ON staff.staffID = absenceProgress.staffID
+                                 WHERE absenceProgress.documentID = %s
+                                 AND absenceProgress.status = 'Waiting for approve'
+                                 GROUP BY staff.staffID
+                                 ORDER BY absenceProgress.step ASC
+                                 LIMIT 1"""
+        cursor.execute(next_staff_email_query, (detail.documentID, ))
+        next_staff_email = cursor.fetchone()
+        if next_staff_email:
+            subject = "New Document to sign."
+            body = (f"You have document to sign\n"
+                    f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
+            email_payload = {
+                "email": next_staff_email[0],
+                "subject": subject,
+                "body": body
+            }
+            await send_email(EmailSchema(**email_payload))
 
         return {"message": "Approve successfully"}
 
