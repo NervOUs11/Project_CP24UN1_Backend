@@ -1140,12 +1140,19 @@ async def approve_activity_document(detail: ActivityApproveDetail):
         conn.commit()
 
         # Send email to notify next staff
+        # next_staff_email_query = """SELECT staff.email
+        #                          FROM staff
+        #                          JOIN activityProgress ON staff.staffID = activityProgress.staffID
+        #                          WHERE activityProgress.documentID = %s
+        #                          AND activityProgress.status = 'Waiting for approve'
+        #                          GROUP BY staff.staffID
+        #                          ORDER BY activityProgress.step ASC
+        #                          LIMIT 1"""
         next_staff_email_query = """SELECT staff.email
                                  FROM staff
                                  JOIN activityProgress ON staff.staffID = activityProgress.staffID
                                  WHERE activityProgress.documentID = %s
                                  AND activityProgress.status = 'Waiting for approve'
-                                 GROUP BY staff.staffID
                                  ORDER BY activityProgress.step ASC
                                  LIMIT 1"""
         cursor.execute(next_staff_email_query, (detail.documentID,))

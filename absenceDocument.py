@@ -457,12 +457,19 @@ async def approve_absence_document(detail: AbsenceApproveDetail):
         conn.commit()
 
         # Send email to notify next staff
+        # next_staff_email_query = """SELECT staff.email
+        #                          FROM staff
+        #                          JOIN absenceProgress ON staff.staffID = absenceProgress.staffID
+        #                          WHERE absenceProgress.documentID = %s
+        #                          AND absenceProgress.status = 'Waiting for approve'
+        #                          GROUP BY staff.staffID
+        #                          ORDER BY absenceProgress.step ASC
+        #                          LIMIT 1"""
         next_staff_email_query = """SELECT staff.email
                                  FROM staff
                                  JOIN absenceProgress ON staff.staffID = absenceProgress.staffID
                                  WHERE absenceProgress.documentID = %s
                                  AND absenceProgress.status = 'Waiting for approve'
-                                 GROUP BY staff.staffID
                                  ORDER BY absenceProgress.step ASC
                                  LIMIT 1"""
         cursor.execute(next_staff_email_query, (detail.documentID, ))
