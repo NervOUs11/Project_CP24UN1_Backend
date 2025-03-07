@@ -378,7 +378,8 @@ async def detail_absence_document(documentID: str, id: str):
                 "staffName": p[11],
                 "staffRole": p[12],
                 "status": p[6],
-                "comment": p[7]
+                "comment": p[7],
+                "step": p[1]
             }
             progress.append(info)
 
