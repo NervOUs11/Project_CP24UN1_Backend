@@ -36,15 +36,7 @@ async def send_email(email: EmailSchema):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
             smtp.send_message(msg)
-        logger.info(f"Email successfully sent to {email}")
+        logger.info(f"Email successfully sent to {email.email}")
     except Exception as e:
-        logger.error(f"Error sending email to {email}: {str(e)}")
+        logger.error(f"Error sending email to {email.email}: {str(e)}")
         raise e
-
-# app = FastAPI()
-#
-#
-# @app.post("/send-email")
-# async def send_email_route(email: EmailSchema):
-#     send_email(email)
-#     return {"message": f"Email sent to {email.email}"}

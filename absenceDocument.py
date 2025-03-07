@@ -136,12 +136,9 @@ async def create_absence_document(form: AbsenceFormCreate):
             step = [1, 1, 2, 3]
             email_1 = all_staff_details[0][5]  # first advisor email
             email_2 = all_staff_details[1][5]  # second advisor email
-            print(email_1)
-            print(email_2)
         else:
             step = [1, 2, 3]  # student has 1 advisor
             email_1 = all_staff_details[0][5]  # first advisor email
-            print(email_1)
         for s in all_staff_details:
             cursor.execute(insert_progress, (
                 step[step_count],
@@ -158,8 +155,8 @@ async def create_absence_document(form: AbsenceFormCreate):
         conn.commit()
 
         # Send email notification
-        subject = "New Document to sign."
-        body = (f"You have document to sign\n"
+        subject = "New Absence Document to sign."
+        body = (f"You have document to sign.\n"
                 f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
 
         # If student has 1 advisor (email_2 is None)
@@ -291,6 +288,26 @@ async def update_absence_document(documentID: str, id: str, form: AbsenceFormUpd
         ))
 
         conn.commit()
+
+        # send email notification
+        staff_email_query = """SELECT staff.email 
+                            FROM staff 
+                            JOIN absenceProgress ON staff.staffID = absenceProgress.staffID
+                            WHERE absenceProgress.documentID = %s AND absenceProgress.step = 1"""
+        cursor.execute(staff_email_query, (documentID,))
+        staff_email = cursor.fetchall()
+
+        if staff_email:
+            subject = "New Absence Document to sign."
+            body = (f"You have document to sign.\n"
+                    f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
+            for email in staff_email:
+                email_payload = {
+                    "email": email[0],
+                    "subject": subject,
+                    "body": body
+                }
+                await send_email(EmailSchema(**email_payload))
 
         return {"message": "Edited successfully"}
 
@@ -456,15 +473,7 @@ async def approve_absence_document(detail: AbsenceApproveDetail):
 
         conn.commit()
 
-        # Send email to notify next staff
-        # next_staff_email_query = """SELECT staff.email
-        #                          FROM staff
-        #                          JOIN absenceProgress ON staff.staffID = absenceProgress.staffID
-        #                          WHERE absenceProgress.documentID = %s
-        #                          AND absenceProgress.status = 'Waiting for approve'
-        #                          GROUP BY staff.staffID
-        #                          ORDER BY absenceProgress.step ASC
-        #                          LIMIT 1"""
+        # Check if there are any remaining staff approvals
         next_staff_email_query = """SELECT staff.email
                                  FROM staff
                                  JOIN absenceProgress ON staff.staffID = absenceProgress.staffID
@@ -472,11 +481,13 @@ async def approve_absence_document(detail: AbsenceApproveDetail):
                                  AND absenceProgress.status = 'Waiting for approve'
                                  ORDER BY absenceProgress.step ASC
                                  LIMIT 1"""
-        cursor.execute(next_staff_email_query, (detail.documentID, ))
+        cursor.execute(next_staff_email_query, (detail.documentID,))
         next_staff_email = cursor.fetchone()
+
         if next_staff_email:
-            subject = "New Document to sign."
-            body = (f"You have document to sign\n"
+            # Send email to the next staff
+            subject = "New Absence Document to sign."
+            body = (f"You have absence document to sign\n"
                     f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
             email_payload = {
                 "email": next_staff_email[0],
@@ -484,6 +495,25 @@ async def approve_absence_document(detail: AbsenceApproveDetail):
                 "body": body
             }
             await send_email(EmailSchema(**email_payload))
+        else:
+            # If no staff approvals are left, notify the student
+            student_email_query = """SELECT student.email
+                                  FROM student
+                                  JOIN absenceDocument ON student.studentID = absenceDocument.studentID
+                                  WHERE absenceDocument.documentID = %s"""
+            cursor.execute(student_email_query, (detail.documentID,))
+            student_email = cursor.fetchone()
+
+            if student_email:
+                subject = "Your Absence Document Has Been Approved."
+                body = (f"Your absence document has been approved successfully.\n"
+                        f"You can view the details at: https://capstone24.sit.kmutt.ac.th/un1")
+                email_payload = {
+                    "email": student_email[0],
+                    "subject": subject,
+                    "body": body
+                }
+                await send_email(EmailSchema(**email_payload))
 
         return {"message": "Approve successfully"}
 
@@ -536,6 +566,25 @@ async def reject_absence_document(detail: AbsenceRejectDetail):
             detail.documentID
         ))
         conn.commit()
+
+        # send email to student
+        student_email_query = """SELECT student.email 
+                              FROM student 
+                              JOIN absenceDocument ON student.studentID = absenceDocument.studentID
+                              WHERE absenceDocument.documentID = %s"""
+        cursor.execute(student_email_query, (detail.documentID,))
+        student_email = cursor.fetchone()
+        if student_email:
+            subject = "Absence Document Rejected."
+            body = (f"Your absence document has been rejected.\n"
+                    f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
+            email_payload = {
+                "email": student_email[0],
+                "subject": subject,
+                "body": body
+            }
+            await send_email(EmailSchema(**email_payload))
+
         return {"message": "Reject successfully"}
 
     except HTTPException as e:

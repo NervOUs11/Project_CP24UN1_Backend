@@ -58,7 +58,7 @@ class ActivityFormUpdate(BaseModel):
     title: str
     location: str
     propose: str
-    payment: str
+    payment: float
     sustainabilityDetail: str
     sustainabilityPropose: str
     activityCharacteristic: str
@@ -412,7 +412,6 @@ async def create_activity_document(form: ActivityFormCreate):
 
         # check studentQF_ID in table studentQF and insert into document_studentQF table
         for studentQF in form.studentQF:
-            print(studentQF)
             check_studentQF_query = """SELECT * FROM studentQF WHERE student_QF_ID = %s"""
             cursor.execute(check_studentQF_query, (studentQF[0],))
             studentQF_result = cursor.fetchone()
@@ -591,8 +590,8 @@ async def create_activity_document(form: ActivityFormCreate):
         cursor.execute(staff_email_query, (document_id,))
         staff_email = cursor.fetchone()
 
-        subject = "New Document to sign."
-        body = (f"You have document to sign\n"
+        subject = "New Activity Document to sign."
+        body = (f"You have document to sign.\n"
                 f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
         email_payload = {
             "email": staff_email[0],
@@ -861,6 +860,24 @@ async def update_activity_document(documentID: str, id: str, form: ActivityFormU
         ))
 
         conn.commit()
+
+        # Send email notification
+        staff_email_query = """SELECT staff.email FROM staff
+                                    JOIN activityProgress ON staff.staffID = activityProgress.staffID
+                                    WHERE activityProgress.documentID = %s AND activityProgress.step = 1"""
+        cursor.execute(staff_email_query, (documentID,))
+        staff_email = cursor.fetchone()
+
+        subject = "New Activity Document to sign."
+        body = (f"You have document to sign.\n"
+                f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
+        email_payload = {
+            "email": staff_email[0],
+            "subject": subject,
+            "body": body
+        }
+        await send_email(EmailSchema(**email_payload))
+
         return {"message": "Edited successfully"}
 
     except HTTPException as e:
@@ -1139,15 +1156,7 @@ async def approve_activity_document(detail: ActivityApproveDetail):
         ))
         conn.commit()
 
-        # Send email to notify next staff
-        # next_staff_email_query = """SELECT staff.email
-        #                          FROM staff
-        #                          JOIN activityProgress ON staff.staffID = activityProgress.staffID
-        #                          WHERE activityProgress.documentID = %s
-        #                          AND activityProgress.status = 'Waiting for approve'
-        #                          GROUP BY staff.staffID
-        #                          ORDER BY activityProgress.step ASC
-        #                          LIMIT 1"""
+        # Check if there are any remaining staff approvals
         next_staff_email_query = """SELECT staff.email
                                  FROM staff
                                  JOIN activityProgress ON staff.staffID = activityProgress.staffID
@@ -1157,9 +1166,11 @@ async def approve_activity_document(detail: ActivityApproveDetail):
                                  LIMIT 1"""
         cursor.execute(next_staff_email_query, (detail.documentID,))
         next_staff_email = cursor.fetchone()
+
         if next_staff_email:
-            subject = "New Document to sign."
-            body = (f"You have document to sign\n"
+            # Send email to the next staff
+            subject = "New Activity Document to sign."
+            body = (f"You have activity document to sign\n"
                     f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
             email_payload = {
                 "email": next_staff_email[0],
@@ -1167,6 +1178,25 @@ async def approve_activity_document(detail: ActivityApproveDetail):
                 "body": body
             }
             await send_email(EmailSchema(**email_payload))
+        else:
+            # If no staff approvals are left, notify the student
+            student_email_query = """SELECT student.email
+                                  FROM student
+                                  JOIN activityDocument ON student.studentID = activityDocument.studentID
+                                  WHERE activityDocument.documentID = %s"""
+            cursor.execute(student_email_query, (detail.documentID,))
+            student_email = cursor.fetchone()
+
+            if student_email:
+                subject = "Your Activity Document Has Been Approved."
+                body = (f"Your activity document has been approved successfully.\n"
+                        f"You can view the details at: https://capstone24.sit.kmutt.ac.th/un1")
+                email_payload = {
+                    "email": student_email[0],
+                    "subject": subject,
+                    "body": body
+                }
+                await send_email(EmailSchema(**email_payload))
 
         return {"message": "Approve successfully"}
 
@@ -1218,6 +1248,25 @@ async def reject_activity_document(detail: ActivityRejectDetail):
             detail.documentID
         ))
         conn.commit()
+
+        # send email to student
+        student_email_query = """SELECT student.email 
+                              FROM student 
+                              JOIN activityDocument ON student.studentID = activityDocument.studentID
+                              WHERE activityDocument.documentID = %s"""
+        cursor.execute(student_email_query, (detail.documentID,))
+        student_email = cursor.fetchone()
+        if student_email:
+            subject = "Activity Document Rejected."
+            body = (f"Your activity document has been rejected.\n"
+                    f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
+            email_payload = {
+                "email": student_email[0],
+                "subject": subject,
+                "body": body
+            }
+            await send_email(EmailSchema(**email_payload))
+
         return {"message": "Reject successfully"}
 
     except HTTPException as e:
