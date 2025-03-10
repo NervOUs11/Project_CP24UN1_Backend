@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Optional
 from sendEmail import send_email, EmailSchema
 from login_JWT import get_token
-from adminService import (get_all_user, get_all_role, get_all_club)
+from adminService import (get_all_user)
 from absenceDocument import (create_absence_document, delete_absence_document, update_absence_document,
                              approve_absence_document, reject_absence_document, detail_absence_document,
                              AbsenceFormCreate, AbsenceFormUpdate, AbsenceApproveDetail, AbsenceRejectDetail)
