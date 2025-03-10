@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`activityDocument` (
   `editDate` DATETIME NOT NULL,
   `code` VARCHAR(50) NOT NULL,
   `departmentName` VARCHAR(50) NOT NULL,
-  `title` VARCHAR(50) NOT NULL,
+  `title` VARCHAR(100) NOT NULL,
   `location` VARCHAR(100) NOT NULL,
   `propose` VARCHAR(2000) NOT NULL,
   `payment` FLOAT NOT NULL,
@@ -324,7 +324,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `kmutt_database`.`studentQF` (
   `Student_QF_ID` INT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(50) NOT NULL,
+  `name` VARCHAR(100) NOT NULL,
   PRIMARY KEY (`Student_QF_ID`))
 ENGINE = InnoDB;
 

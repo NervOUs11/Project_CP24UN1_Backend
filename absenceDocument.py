@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from dotenv import load_dotenv
 import os
 from sendEmail import send_email, EmailSchema
+from fastapi.responses import JSONResponse
 
 
 load_dotenv()
@@ -182,7 +183,7 @@ async def create_absence_document(form: AbsenceFormCreate):
             await send_email(EmailSchema(**email_payload))
             await send_email(EmailSchema(**email_payload_2))
 
-        return {"message": "Created successfully"}, 201
+        return JSONResponse(content={"message": "Created successfully"}, status_code=201)
 
     except mysql.connector.Error as e:
         conn.rollback()

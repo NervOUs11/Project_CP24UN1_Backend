@@ -89,13 +89,13 @@ INSERT INTO `kmutt_database`.`participant` (`participantName`) VALUES
 
 -- Insert data into `studentQF ` table
 INSERT INTO `kmutt_database`.`studentQF` (`name`) VALUES
-("Knowledge"),
-("Professional Skill"),
-("Thinking Skill"),
-("Learning Skill"),
-("Communication Skill"),
-("Management Skill"),
-("Leadership"),
+("Knowledge(ความรู้)"),
+("Professional Skill(ทักษะทางวิชาชีพ)"),
+("Thinking Skill(ทักษะการคิด)"),
+("Learning Skill(ทักษะการเรียนรู้)"),
+("Communication Skill(ทักษะการสื่อสาร)"),
+("Management Skill(ทักษะการบริหารจัดการ)"),
+("Leadership(ภาวะผู้นำ)"),
 ("KMUTT’s citizenship");
 
 -- Insert data into `entrepreneurial ` table
