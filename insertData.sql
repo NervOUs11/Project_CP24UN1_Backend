@@ -2,8 +2,9 @@
 INSERT INTO `kmutt_database`.`faculty` (`facultyName`) VALUES
 ('คณะวิศวกรรมศาสตร์'),
 ('คณะวิทยาศาสตร์'),
-('คณะบริหารธุรกิจ'),
+('คณะครุศาสตร์อุตสาหกรรม และเทคโนโลยี'),
 ('คณะเทคโนโลยีสารสนเทศ'),
+('คณะสถาปัตยกรรมศาสตร์ และการออกแบบ'),
 ('องค์การนักศึกษา'),
 ('สภานักศึกษา');
 
@@ -12,7 +13,7 @@ INSERT INTO `kmutt_database`.`department` (`departmentName`, `facultyID`) VALUES
 ('สาขาวิศวกรรมคอมพิวเตอร์', 1),
 ('สาขาวิศวกรรมไฟฟ้า', 1),
 ('สาขาฟิสิกส์', 2),
-('สาขาการเงิน', 3),
+('สาขาสถาปัตยกรรมภายใน', 3),
 ('สาขาเทคโนโลยีสารสนเทศ', 4),
 ('สาขาวิทยาการคอมพิวเตอร์', 4),
 ('สาขานวัตกรรมบริการดิจิทัล', 4);
@@ -89,14 +90,14 @@ INSERT INTO `kmutt_database`.`participant` (`participantName`) VALUES
 
 -- Insert data into `studentQF ` table
 INSERT INTO `kmutt_database`.`studentQF` (`name`) VALUES
-("Knowledge(ความรู้)"),
-("Professional Skill(ทักษะทางวิชาชีพ)"),
-("Thinking Skill(ทักษะการคิด)"),
-("Learning Skill(ทักษะการเรียนรู้)"),
-("Communication Skill(ทักษะการสื่อสาร)"),
-("Management Skill(ทักษะการบริหารจัดการ)"),
-("Leadership(ภาวะผู้นำ)"),
-("KMUTT’s citizenship");
+("Knowledge (ความรู้)"),
+("Professional Skill (ทักษะทางวิชาชีพ)"),
+("Thinking Skill (ทักษะการคิด)"),
+("Learning Skill (ทักษะการเรียนรู้)"),
+("Communication Skill (ทักษะการสื่อสาร)"),
+("Management Skill (ทักษะการบริหารจัดการ)"),
+("Leadership (ภาวะผู้นำ)"),
+("ความเป็นพลเมือง มจธ. (KMUTT’s citizenship)");
 
 -- Insert data into `entrepreneurial ` table
 INSERT INTO `kmutt_database`.`entrepreneurial` (`entrepreneurialName`) VALUES
