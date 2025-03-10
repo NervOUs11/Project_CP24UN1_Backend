@@ -78,6 +78,10 @@ async def get_all_user():
                            "club": record[10]} for record in all_student]
 
         all_user_result = staff_result + student_result
+
+        if not all_user_result:
+            raise HTTPException(status_code=404, detail="No users found")
+
         return all_user_result
 
     except HTTPException as e:

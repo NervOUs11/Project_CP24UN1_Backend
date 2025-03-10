@@ -191,24 +191,6 @@ async def admin_get_all_user():
         raise e
 
 
-@app.get("/api/admin/allRole")
-async def admin_get_all_role():
-    try:
-        result = await get_all_role()
-        return result
-    except HTTPException as e:
-        raise e
-
-
-@app.get("/api/admin/allClub")
-async def admin_get_all_club():
-    try:
-        result = await get_all_club()
-        return result
-    except HTTPException as e:
-        raise e
-
-
 @app.get("/api/document/all/{id}")
 async def get_all_document(id: str):
     conn = get_db_connection()
