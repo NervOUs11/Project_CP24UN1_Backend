@@ -904,6 +904,15 @@ async def detail_activity_document(documentID: str, id: str):
         if not detail_result:
             raise HTTPException(status_code=404, detail="Document not found")
 
+        query_doc_owner = """SELECT student.*, faculty.facultyName, department.departmentName, club.clubName
+                          FROM student 
+                          JOIN faculty ON student.facultyID = faculty.facultyID
+                          JOIN department ON student.departmentID = department.departmentID
+                          JOIN club ON student.clubID = club.clubID
+                          WHERE studentID = %s"""
+        cursor.execute(query_doc_owner, (detail_result[1],))
+        doc_owner = cursor.fetchone()
+
         query_participant = """SELECT participant.participantName, document_participant.count 
                             FROM participant 
                             JOIN document_participant 
@@ -1100,7 +1109,23 @@ async def detail_activity_document(documentID: str, id: str):
             "result": result_list,
             "sustainability": sustainability_list,
             "committee": committee_list,
-            "allProgress": progress
+            "allProgress": progress,
+            "Owner": {
+                "studentID": doc_owner[0],
+                "username": doc_owner[1],
+                "name": f"{doc_owner[2]} {doc_owner[3]}",
+                "tel": doc_owner[4],
+                "email": doc_owner[5],
+                "year": doc_owner[6],
+                "facultyID": doc_owner[7],
+                "faculty": doc_owner[12],
+                "departmentID": doc_owner[8],
+                "department": doc_owner[13],
+                "currentGPA": doc_owner[9],
+                "cumulativeGPA": doc_owner[10],
+                "clubID": doc_owner[11],
+                "club": doc_owner[14]
+            }
         }
 
         if not document_info:

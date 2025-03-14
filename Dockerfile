@@ -14,9 +14,6 @@ RUN if [ -d "/app/.venv" ]; then rm -rf /app/.venv; fi
 RUN python -m venv /app/.venv
 
 # Install dependencies
-##RUN /app/.venv/bin/pip install --upgrade pip && \
-##  /app/.venv/bin/pip install -r requirements.txt
-
 RUN /app/.venv/bin/pip install --upgrade pip
 COPY requirements.txt /app/requirements.txt
 RUN /app/.venv/bin/pip install -r requirements.txt
