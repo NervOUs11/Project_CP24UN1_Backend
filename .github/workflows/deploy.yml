@@ -16,9 +16,18 @@ jobs:
     - name: Set up SSH
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa  # Fix line endings
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+
+    - name: Debug SSH Key
+      run: |
+        echo "Checking SSH Key:"
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | wc -l  # Should return ~30+ lines
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | head -n 5  # Check first few lines (should include BEGIN)
+
+    - name: Test SSH Connection
+      run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no sysadmin@${{ secrets.VM_HOST }} "echo SSH Success!"
 
     - name: Deploy to VM
       run: |
