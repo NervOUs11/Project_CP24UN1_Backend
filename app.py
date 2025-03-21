@@ -5,9 +5,6 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from argon2 import PasswordHasher
 from pydantic import BaseModel
-from datetime import datetime
-from typing import Optional
-from sendEmail import send_email, EmailSchema
 from login_JWT import get_token
 from adminService import (get_all_user)
 from absenceDocument import (create_absence_document, delete_absence_document, update_absence_document,
