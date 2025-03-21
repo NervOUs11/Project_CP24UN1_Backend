@@ -1284,7 +1284,7 @@ async def reject_activity_document(detail: ActivityRejectDetail):
         cursor.execute(student_email_query, (detail.documentID,))
         student_email = cursor.fetchone()
         if student_email:
-            subject = "Activity Document Rejected."
+            subject = "Your Activity Document Has Been Rejected."
             body = (f"Your activity document has been rejected.\n"
                     f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
             email_payload = {

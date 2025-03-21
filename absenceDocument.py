@@ -602,7 +602,7 @@ async def reject_absence_document(detail: AbsenceRejectDetail):
         cursor.execute(student_email_query, (detail.documentID,))
         student_email = cursor.fetchone()
         if student_email:
-            subject = "Absence Document Rejected."
+            subject = "Your Absence Document Has Been Rejected."
             body = (f"Your absence document has been rejected.\n"
                     f"Go to this website: https://capstone24.sit.kmutt.ac.th/un1")
             email_payload = {
