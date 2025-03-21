@@ -119,6 +119,8 @@ async def get_participant():
         query_all_participant = """SELECT * FROM participant"""
         cursor.execute(query_all_participant)
         all_participant = cursor.fetchall()
+        if not all_participant:
+            raise HTTPException(status_code=404, detail="Participant not found")
         participant_result = [{"participantID": record[0],
                                "participantName": record[1]}
                               for record in all_participant]
@@ -140,6 +142,8 @@ async def get_studentQF():
         query_all_studentQF = """SELECT * FROM studentQF"""
         cursor.execute(query_all_studentQF)
         all_studentQF = cursor.fetchall()
+        if not all_studentQF:
+            raise HTTPException(status_code=404, detail="StudentQF not found")
         studentQF_result = [{"studentQF_ID": record[0],
                              "studentQF_Name": record[1]}
                             for record in all_studentQF]
@@ -161,6 +165,8 @@ async def get_entrepreneurial():
         query_all_entrepreneurial = """SELECT * FROM entrepreneurial"""
         cursor.execute(query_all_entrepreneurial)
         all_entrepreneurial = cursor.fetchall()
+        if not all_entrepreneurial:
+            raise HTTPException(status_code=404, detail="Entrepreneurial not found")
         entrepreneurial_result = [{"entrepreneurialID": record[0],
                                    "entrepreneurialName": record[1]}
                                   for record in all_entrepreneurial]
@@ -182,6 +188,8 @@ async def get_evaluation():
         query_all_entrepreneurial = """SELECT * FROM evaluation"""
         cursor.execute(query_all_entrepreneurial)
         all_evaluation = cursor.fetchall()
+        if not all_evaluation:
+            raise HTTPException(status_code=404, detail="Evaluation not found")
         evaluation_result = [{"evaluationID": record[0],
                               "evaluationName": record[1]}
                              for record in all_evaluation]
@@ -203,6 +211,8 @@ async def get_activity():
         query_all_activity = """SELECT * FROM activity"""
         cursor.execute(query_all_activity)
         all_activity = cursor.fetchall()
+        if not all_activity:
+            raise HTTPException(status_code=404, detail="Activity not found")
         activity_result = [{"activityID": record[0],
                             "activityName": record[1]}
                            for record in all_activity]
@@ -224,6 +234,8 @@ async def get_sustainability():
         query_all_sustainability = """SELECT * FROM sustainability"""
         cursor.execute(query_all_sustainability)
         all_sustainability = cursor.fetchall()
+        if not all_sustainability:
+            raise HTTPException(status_code=404, detail="Sustainability not found")
         sustainability_result = [{"sustainabilityID": record[0],
                                   "sustainabilityName": record[1]}
                                  for record in all_sustainability]
@@ -245,6 +257,8 @@ async def get_goal():
         query_all_goal = """SELECT * FROM goal"""
         cursor.execute(query_all_goal)
         all_goal = cursor.fetchall()
+        if not all_goal:
+            raise HTTPException(status_code=404, detail="Goal not found")
         goal_result = [{"goalID": record[0],
                         "goalName": record[1]}
                        for record in all_goal]
@@ -263,9 +277,12 @@ async def get_staff():
     cursor = conn.cursor()
 
     try:
-        query_all_staff = """SELECT staff.*, role.roleName FROM staff JOIN role ON staff.roleID = role.roleID"""
+        query_all_staff = """SELECT staff.*, role.roleName 
+                          FROM staff JOIN role ON staff.roleID = role.roleID"""
         cursor.execute(query_all_staff)
         all_staff = cursor.fetchall()
+        if not all_staff:
+            raise HTTPException(status_code=404, detail="Staff not found")
         return all_staff
 
     except mysql.connector.Error as e:
@@ -283,10 +300,11 @@ async def get_student():
     try:
         query_all_student = """SELECT student.studentID, concat(student.firstName, " ", student.lastName), 
                             department.departmentName, student.year, student.tel
-                            FROM student JOIN department ON student.departmentID = department.departmentID
-                            """
+                            FROM student JOIN department ON student.departmentID = department.departmentID"""
         cursor.execute(query_all_student)
         all_student = cursor.fetchall()
+        if not all_student:
+            raise HTTPException(status_code=404, detail="Student not found")
         return all_student
 
     except mysql.connector.Error as e:
@@ -305,6 +323,8 @@ async def get_faculty():
         query_all_faculty = """SELECT * FROM faculty"""
         cursor.execute(query_all_faculty)
         all_faculty = cursor.fetchall()
+        if not all_faculty:
+            raise HTTPException(status_code=404, detail="Faculty not found")
         faculty_result = [{"facultyID": record[0],
                            "facultyName": record[1]}
                           for record in all_faculty]
@@ -326,6 +346,8 @@ async def get_club():
         query_all_club = """SELECT * FROM club"""
         cursor.execute(query_all_club)
         all_club = cursor.fetchall()
+        if not all_club:
+            raise HTTPException(status_code=404, detail="Club not found")
         club_result = [{"clubID": record[0],
                         "clubName": record[1]}
                        for record in all_club]
