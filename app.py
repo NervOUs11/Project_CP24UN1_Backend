@@ -7,14 +7,10 @@ from argon2 import PasswordHasher
 from pydantic import BaseModel
 from login_JWT import get_token
 from adminService import (get_all_user)
-from absenceDocument import (create_absence_document, delete_absence_document, update_absence_document,
-                             approve_absence_document, reject_absence_document, detail_absence_document,
-                             AbsenceFormCreate, AbsenceFormUpdate, AbsenceApproveDetail, AbsenceRejectDetail)
-from activityDocument import (create_activity_document, delete_activity_document, update_activity_document,
-                              approve_activity_document, reject_activity_document, detail_activity_document,
-                              ActivityFormCreate, ActivityFormUpdate, ActivityApproveDetail, ActivityRejectDetail,
-                              get_participant, get_studentQF, get_entrepreneurial, get_evaluation, get_activity,
-                              get_sustainability, get_goal, get_staff, get_student, get_faculty, get_club)
+from absenceDocument import (AbsenceDocumentService, AbsenceFormCreate, AbsenceFormUpdate, AbsenceApproveDetail,
+                             AbsenceRejectDetail)
+from activityDocument import (ActivityDocumentService, ActivityFormCreate, ActivityFormUpdate, ActivityApproveDetail,
+                              ActivityRejectDetail)
 
 app = FastAPI()
 ph = PasswordHasher()
@@ -369,7 +365,7 @@ async def get_all_document(id: str):
 @app.post("/api/document/absence/add")
 async def create_absence_doc(form: AbsenceFormCreate):
     try:
-        result = await create_absence_document(form)
+        result = await AbsenceDocumentService.create_absence_document(form)
         return result
     except HTTPException as e:
         raise e
@@ -378,7 +374,7 @@ async def create_absence_doc(form: AbsenceFormCreate):
 @app.get("/api/userID/{id}/document/absence/detail/{documentID}")
 async def get_absence_document_detail(documentID: str, id: str):
     try:
-        result = await detail_absence_document(documentID, id)
+        result = await AbsenceDocumentService.detail_absence_document(documentID, id)
         return result
     except HTTPException as e:
         raise e
@@ -387,7 +383,7 @@ async def get_absence_document_detail(documentID: str, id: str):
 @app.delete("/api/userID/{id}/document/absence/delete/{documentID}")
 async def delete_absence_doc(documentID: str, id: str):
     try:
-        result = await delete_absence_document(documentID, id)
+        result = await AbsenceDocumentService.delete_absence_document(documentID, id)
         return result
     except HTTPException as e:
         raise e
@@ -396,7 +392,7 @@ async def delete_absence_doc(documentID: str, id: str):
 @app.put("/api/userID/{id}/document/absence/edit/{documentID}")
 async def edit_absence_doc(documentID: str, id: str, form: AbsenceFormUpdate):
     try:
-        result = await update_absence_document(documentID, id, form)
+        result = await AbsenceDocumentService.update_absence_document(documentID, id, form)
         return result
     except HTTPException as e:
         raise e
@@ -405,7 +401,7 @@ async def edit_absence_doc(documentID: str, id: str, form: AbsenceFormUpdate):
 @app.put("/api/document/absence/approve")
 async def approve_absence_doc(form: AbsenceApproveDetail):
     try:
-        result = await approve_absence_document(form)
+        result = await AbsenceDocumentService.approve_absence_document(form)
         return result
     except HTTPException as e:
         raise e
@@ -414,7 +410,7 @@ async def approve_absence_doc(form: AbsenceApproveDetail):
 @app.put("/api/document/absence/reject")
 async def reject_absence_doc(form: AbsenceRejectDetail):
     try:
-        result = await reject_absence_document(form)
+        result = await AbsenceDocumentService.reject_absence_document(form)
         return result
     except HTTPException as e:
         raise e
@@ -423,7 +419,7 @@ async def reject_absence_doc(form: AbsenceRejectDetail):
 @app.get("/api/document/activity/allParticipant")
 async def get_all_participant():
     try:
-        result = await get_participant()
+        result = await ActivityDocumentService.get_participant()
         return result
     except HTTPException as e:
         raise e
@@ -432,7 +428,7 @@ async def get_all_participant():
 @app.get("/api/document/activity/allStudentQF")
 async def get_all_studentQF():
     try:
-        result = await get_studentQF()
+        result = await ActivityDocumentService.get_studentQF()
         return result
     except HTTPException as e:
         raise e
@@ -441,7 +437,7 @@ async def get_all_studentQF():
 @app.get("/api/document/activity/allEntrepreneurial")
 async def get_all_entrepreneurial():
     try:
-        result = await get_entrepreneurial()
+        result = await ActivityDocumentService.get_entrepreneurial()
         return result
     except HTTPException as e:
         raise e
@@ -450,7 +446,7 @@ async def get_all_entrepreneurial():
 @app.get("/api/document/activity/allEvaluation")
 async def get_all_evaluation():
     try:
-        result = await get_evaluation()
+        result = await ActivityDocumentService.get_evaluation()
         return result
     except HTTPException as e:
         raise e
@@ -459,7 +455,7 @@ async def get_all_evaluation():
 @app.get("/api/document/activity/allActivity")
 async def get_all_activity():
     try:
-        result = await get_activity()
+        result = await ActivityDocumentService.get_activity()
         return result
     except HTTPException as e:
         raise e
@@ -468,7 +464,7 @@ async def get_all_activity():
 @app.get("/api/document/activity/allSustainability")
 async def get_all_sustainability():
     try:
-        result = await get_sustainability()
+        result = await ActivityDocumentService.get_sustainability()
         return result
     except HTTPException as e:
         raise e
@@ -477,7 +473,7 @@ async def get_all_sustainability():
 @app.get("/api/document/activity/allGoal")
 async def get_all_goal():
     try:
-        result = await get_goal()
+        result = await ActivityDocumentService.get_goal()
         return result
     except HTTPException as e:
         raise e
@@ -486,7 +482,7 @@ async def get_all_goal():
 @app.get("/api/document/activity/allStaff")
 async def get_all_staff():
     try:
-        result = await get_staff()
+        result = await ActivityDocumentService.get_staff()
         return result
     except HTTPException as e:
         raise e
@@ -495,7 +491,7 @@ async def get_all_staff():
 @app.get("/api/document/activity/allStudent")
 async def get_all_student():
     try:
-        result = await get_student()
+        result = await ActivityDocumentService.get_student()
         return result
     except HTTPException as e:
         raise e
@@ -504,7 +500,7 @@ async def get_all_student():
 @app.get("/api/document/activity/allFaculty")
 async def get_all_faculty():
     try:
-        result = await get_faculty()
+        result = await ActivityDocumentService.get_faculty()
         return result
     except HTTPException as e:
         raise e
@@ -513,7 +509,7 @@ async def get_all_faculty():
 @app.get("/api/document/activity/allClub")
 async def get_all_club():
     try:
-        result = await get_club()
+        result = await ActivityDocumentService.get_club()
         return result
     except HTTPException as e:
         raise e
@@ -522,7 +518,7 @@ async def get_all_club():
 @app.post("/api/document/activity/add")
 async def create_absence_doc(form: ActivityFormCreate):
     try:
-        result = await create_activity_document(form)
+        result = await ActivityDocumentService.create_activity_document(form)
         return result
     except HTTPException as e:
         raise e
@@ -531,7 +527,7 @@ async def create_absence_doc(form: ActivityFormCreate):
 @app.get("/api/userID/{id}/document/activity/detail/{documentID}")
 async def get_activity_document_detail(documentID: str, id: str):
     try:
-        result = await detail_activity_document(documentID, id)
+        result = await ActivityDocumentService.detail_activity_document(documentID, id)
         return result
     except HTTPException as e:
         raise e
@@ -540,7 +536,7 @@ async def get_activity_document_detail(documentID: str, id: str):
 @app.delete("/api/userID/{id}/document/activity/delete/{documentID}")
 async def delete_activity_doc(documentID: str, id: str):
     try:
-        result = await delete_activity_document(documentID, id)
+        result = await ActivityDocumentService.delete_activity_document(documentID, id)
         return result
     except HTTPException as e:
         raise e
@@ -549,7 +545,7 @@ async def delete_activity_doc(documentID: str, id: str):
 @app.put("/api/userID/{id}/document/activity/edit/{documentID}")
 async def edit_activity_doc(documentID: str, id: str, form: ActivityFormUpdate):
     try:
-        result = await update_activity_document(documentID, id, form)
+        result = await ActivityDocumentService.update_activity_document(documentID, id, form)
         return result
     except HTTPException as e:
         raise e
@@ -558,7 +554,7 @@ async def edit_activity_doc(documentID: str, id: str, form: ActivityFormUpdate):
 @app.put("/api/document/activity/approve")
 async def approve_activity_doc(form: ActivityApproveDetail):
     try:
-        result = await approve_activity_document(form)
+        result = await ActivityDocumentService.approve_activity_document(form)
         return result
     except HTTPException as e:
         raise e
@@ -567,7 +563,7 @@ async def approve_activity_doc(form: ActivityApproveDetail):
 @app.put("/api/document/activity/reject")
 async def reject_activity_doc(form: ActivityRejectDetail):
     try:
-        result = await reject_activity_document(form)
+        result = await ActivityDocumentService.reject_activity_document(form)
         return result
     except HTTPException as e:
         raise e
