@@ -260,7 +260,8 @@ async def get_all_document(id: str):
 
                 document_info = {
                     "documentID": documentID,
-                    "documentType": r[2],
+                    "documentType": "ใบคำร้องขอลากิจ/ลาป่วย",
+                    "documentName": r[2],
                     "createDate": r[9],
                     "editDate": r[10],
                     "status": document_status
@@ -288,7 +289,8 @@ async def get_all_document(id: str):
 
                 document_info = {
                     "documentID": documentID,
-                    "documentType": r[2],
+                    "documentType": "ใบคำร้องขออนุมัติจัดกิจกรรม",
+                    "documentName": r[9],
                     "createDate": r[5],
                     "editDate": r[6],
                     "status": document_status
