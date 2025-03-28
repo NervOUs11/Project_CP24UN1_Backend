@@ -1037,9 +1037,11 @@ class ActivityDocumentService:
                 sustainability_list.append(sustainability)
 
             query_committee = """SELECT concat(student.firstName, " ", student.lastName), 
-                              student_committee.position, student.studentID, student.tel, student.year
-                              FROM student JOIN student_committee
-                              ON student.studentID = student_committee.studentID
+                              student_committee.position, student.studentID, student.tel, 
+                              department.departmentName, student.year
+                              FROM student 
+                              JOIN student_committee ON student.studentID = student_committee.studentID
+                              JOIN department ON student.departmentID = department.departmentID
                               WHERE student_committee.documentID = %s"""
             cursor.execute(query_committee, (documentID,))
             committee_result = cursor.fetchall()
@@ -1050,7 +1052,8 @@ class ActivityDocumentService:
                     "position": c[1],
                     "studentID": c[2],
                     "tel": c[3],
-                    "year": c[4]
+                    "departmentName": c[4],
+                    "year": c[5]
                 }
                 committee_list.append(committee)
 
