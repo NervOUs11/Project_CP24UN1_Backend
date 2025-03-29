@@ -299,7 +299,8 @@ async def get_all_document(id: str):
             return all_doc
         else:
             # Changed progress to activityProgress and absenceProgress
-            query_activity_progress = """SELECT activityProgress.*, activityDocument.type
+            query_activity_progress = """SELECT activityProgress.*, activityDocument.type, 
+                                         "ใบคำร้องขออนุมัติจัดกิจกรรม" AS documentType, activityDocument.title
                                          FROM activityProgress
                                          JOIN activityDocument ON activityProgress.documentID = activityDocument.documentID
                                          WHERE activityProgress.staffID = %s
@@ -319,7 +320,8 @@ async def get_all_document(id: str):
             cursor.execute(query_activity_progress, (id,))
             activity_progress_result = cursor.fetchall()
 
-            query_absence_progress = """SELECT absenceProgress.*, absenceDocument.type
+            query_absence_progress = """SELECT absenceProgress.*, absenceDocument.type,
+                                        "ใบคำร้องขอลากิจ/ลาป่วย" AS documentType, absenceDocument.type   
                                         FROM absenceProgress
                                         JOIN absenceDocument ON absenceProgress.documentID = absenceDocument.documentID
                                         WHERE absenceProgress.staffID = %s
@@ -338,12 +340,15 @@ async def get_all_document(id: str):
                                          )"""
             cursor.execute(query_absence_progress, (id,))
             absence_progress_result = cursor.fetchall()
+            print(absence_progress_result)
+            print(activity_progress_result)
 
             for r in activity_progress_result + absence_progress_result:
                 document_info = {
                     "progessID": r[0],
                     "documentID": r[4],
-                    "documentType": r[11],
+                    "documentType": r[12],
+                    "documentName": r[13],
                     "studentID": r[5],
                     "status": r[6],
                     "comment": r[7],
