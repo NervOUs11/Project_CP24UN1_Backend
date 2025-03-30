@@ -948,13 +948,7 @@ class ActivityDocumentService:
                 }
                 participant_list.append(participant)
 
-            # query_document_activity = """SELECT activity.activityName, document_activity.countHour
-            #                           FROM activity
-            #                           JOIN document_activity
-            #                           ON activity.activityID = document_activity.activityID
-            #                           WHERE document_activity.documentID = %s"""
-            query_document_activity = """SELECT 
-                                      activity.activityName, 
+            query_document_activity = """SELECT activity.activityID, activity.activityName, 
                                       COALESCE(document_activity.countHour, 0) AS countHour
                                       FROM activity
                                       LEFT JOIN document_activity 
@@ -965,8 +959,9 @@ class ActivityDocumentService:
             activity_list = []
             for a in activity_result:
                 activity = {
-                    "activityName": a[0],
-                    "countHour": a[1]
+                    "activityID": a[0],
+                    "activityName": a[1],
+                    "countHour": a[2]
                 }
                 activity_list.append(activity)
 
