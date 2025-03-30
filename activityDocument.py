@@ -948,11 +948,18 @@ class ActivityDocumentService:
                 }
                 participant_list.append(participant)
 
-            query_document_activity = """SELECT activity.activityName, document_activity.countHour 
-                                      FROM activity 
-                                      JOIN document_activity 
-                                      ON activity.activityID = document_activity.activityID
-                                      WHERE document_activity.documentID = %s"""
+            # query_document_activity = """SELECT activity.activityName, document_activity.countHour
+            #                           FROM activity
+            #                           JOIN document_activity
+            #                           ON activity.activityID = document_activity.activityID
+            #                           WHERE document_activity.documentID = %s"""
+            query_document_activity = """SELECT 
+                                      activity.activityName, 
+                                      COALESCE(document_activity.countHour, 0) AS countHour
+                                      FROM activity
+                                      LEFT JOIN document_activity 
+                                      ON activity.activityID = document_activity.activityID 
+                                      AND document_activity.documentID = %s;"""
             cursor.execute(query_document_activity, (documentID,))
             activity_result = cursor.fetchall()
             activity_list = []
