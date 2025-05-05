@@ -5,3 +5,5 @@ argon2-cffi
 python-dotenv
 pydantic
 email_validator
+python-jose
+httpx
