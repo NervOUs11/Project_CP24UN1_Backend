@@ -60,7 +60,8 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `kmutt_database`.`club` (
   `clubID` INT NOT NULL AUTO_INCREMENT,
   `clubName` VARCHAR(50) NOT NULL,
-  PRIMARY KEY (`clubID`))
+  PRIMARY KEY (`clubID`),
+  UNIQUE INDEX `clubName_UNIQUE` (`clubName` ASC) VISIBLE)
 ENGINE = InnoDB;
 
 
@@ -120,6 +121,7 @@ CREATE TABLE IF NOT EXISTS `kmutt_database`.`student` (
   PRIMARY KEY (`studentID`, `departmentID`, `facultyID`),
   INDEX `fk_student_department2_idx` (`departmentID` ASC, `facultyID` ASC) VISIBLE,
   INDEX `fk_student_table11_idx` (`clubID` ASC) VISIBLE,
+  UNIQUE INDEX `username_UNIQUE` (`username` ASC) VISIBLE,
   CONSTRAINT `fk_student_department2`
     FOREIGN KEY (`departmentID` , `facultyID`)
     REFERENCES `kmutt_database`.`department` (`departmentID` , `facultyID`)
